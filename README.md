@@ -8,6 +8,11 @@ System współpracuje z bazą danych MySQL oparta na kontenerze Docker. Aby utwo
 docker-compose up -d
 ```
 
+## Podstawowe strony
+
+- Strona główna: [http://localhost:8080](http://localhost:8080)
+- Swagger API: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+
 ## Kryteria oceny (Git)
 
 ### Wykonanie commita
