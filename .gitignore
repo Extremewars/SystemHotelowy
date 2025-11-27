@@ -38,10 +38,6 @@ target/
 
 /target/
 .gradle
-!**/src/main/**/target/
-!**/src/test/**/target/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
 .DS_Store
 
@@ -74,6 +70,4 @@ error-screenshots/
 *.iml
 *.ipr
 out/
-!**/src/main/**/out/
-!**/src/test/**/out/
 /frontend/generated/

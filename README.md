@@ -1,5 +1,8 @@
 # SystemHotelowy
 
+## Wersja projektu
+Projekt działa dla wersji Java 17 oraz Spring Boot 3.0.5. W 
+
 ## Baza danych
 
 System współpracuje z bazą danych MySQL oparta na kontenerze Docker. Aby utworzyć bazę danych, trzeba użyć następującego polecenia:
