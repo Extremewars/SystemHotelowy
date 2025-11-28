@@ -1,13 +1,6 @@
 package org.systemhotelowy.controller;
 
 
-import org.systemhotelowy.dto.LoginRequest;
-import org.systemhotelowy.dto.UserRequest;
-import org.systemhotelowy.dto.UserResponse;
-import org.systemhotelowy.model.ROLE;
-import org.systemhotelowy.model.User;
-import org.systemhotelowy.service.JwtService;
-import org.systemhotelowy.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,10 +10,20 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.systemhotelowy.dto.LoginRequest;
+import org.systemhotelowy.dto.LoginResponse;
+import org.systemhotelowy.dto.UserRequest;
+import org.systemhotelowy.dto.UserResponse;
+import org.systemhotelowy.model.ROLE;
+import org.systemhotelowy.model.User;
+import org.systemhotelowy.service.JwtService;
+import org.systemhotelowy.service.UserService;
 
 import java.net.URI;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -36,8 +39,9 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+        Authentication auth;
         try {
-            Authentication auth = authenticationManager.authenticate(
+            auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getUsername(),
                             loginRequest.getPassword()
@@ -46,34 +50,31 @@ public class AuthController {
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Niepoprawne dane");
         }
-        UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getUsername());
+        UserDetails userDetails = (UserDetails) auth.getPrincipal();
         String jwt = jwtService.generateToken(userDetails);
-        return ResponseEntity.ok(Map.of("token", jwt));
+
+        return ResponseEntity.ok(new LoginResponse(jwt, "Bearer"));
     }
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody UserRequest request){
-        // Wymuś domyślną rolę USER, jeśli nie podano
         if (request.getRole() == null) {
             request.setRole(ROLE.USER);
         }
-        // Prosta walidacja danych minimalnych
         if (request.getEmail() == null || request.getEmail().isBlank() ||
             request.getPassword() == null || request.getPassword().isBlank()) {
             return ResponseEntity.badRequest().body("Email i hasło są wymagane");
         }
-        // Sprawdzenie konfliktu po email
         if (userService.findByEmail(request.getEmail()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Użytkownik o podanym email już istnieje");
         }
-        // Mapowanie DTO -> encja
+
         User u = new User();
         u.setFirstName(request.getFirstName());
         u.setLastName(request.getLastName());
         u.setEmail(request.getEmail());
-        u.setPassword(request.getPassword()); // Zostanie zakodowane w serwisie
+        u.setPassword(request.getPassword());
         u.setRole(request.getRole());
-        u.setAddress(request.getAddress());
 
         User created = userService.create(u);
 
@@ -83,7 +84,6 @@ public class AuthController {
         resp.setLastName(created.getLastName());
         resp.setEmail(created.getEmail());
         resp.setRole(created.getRole());
-        resp.setAddress(created.getAddress());
 
         return ResponseEntity.created(URI.create("/api/users/" + created.getId())).body(resp);
     }

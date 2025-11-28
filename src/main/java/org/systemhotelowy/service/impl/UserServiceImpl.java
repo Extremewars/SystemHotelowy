@@ -11,9 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Default implementation of UserService with password encoding on create/update.
- */
 @Service
 @Transactional
 public class UserServiceImpl implements UserService {
@@ -62,14 +59,11 @@ public class UserServiceImpl implements UserService {
         User existing = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("User with id " + id + " not found."));
 
-        // Aktualizuj pola (bezpośrednie mapowanie; możesz dostosować)
         existing.setFirstName(user.getFirstName());
         existing.setLastName(user.getLastName());
         existing.setEmail(user.getEmail());
-        existing.setAddress(user.getAddress());
         existing.setRole(user.getRole());
 
-        // Jeśli podano nowe hasło — enkoduj i ustaw; jeśli nie, zostaw stare
         if (user.getPassword() != null && !user.getPassword().isBlank()) {
             existing.setPassword(passwordEncoder.encode(user.getPassword()));
         }

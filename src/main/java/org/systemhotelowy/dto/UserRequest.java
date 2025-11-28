@@ -14,5 +14,10 @@ public class UserRequest {
     private String email;
     private String password;
     private ROLE role;
-    private String address;
+    public UserRequest(String firstName, String lastName, String email, String password) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.password = password;
+    }
 }
