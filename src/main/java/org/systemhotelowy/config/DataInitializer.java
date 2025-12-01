@@ -4,7 +4,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.systemhotelowy.model.ROLE;
+import org.systemhotelowy.model.Role;
 import org.systemhotelowy.model.User;
 import org.systemhotelowy.repository.UserRepository;
 
@@ -16,7 +16,7 @@ public class DataInitializer {
         return args -> {
             if (userRepository.findByEmail("admin@local").isEmpty()) {
                 User admin = new User(null, "System", "Administrator", "admin@local",
-                        passwordEncoder.encode("admin123"), ROLE.ADMIN);
+                        passwordEncoder.encode("admin123"), Role.ADMIN);
                 userRepository.save(admin);
                 System.out.println("Admin user created: admin@local / admin123");
             }

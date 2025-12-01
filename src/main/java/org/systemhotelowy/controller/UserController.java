@@ -1,11 +1,13 @@
 package org.systemhotelowy.controller;
 
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.systemhotelowy.dto.UserRequest;
 import org.systemhotelowy.dto.UserResponse;
+import org.systemhotelowy.mapper.UserMapper;
 import org.systemhotelowy.model.User;
 import org.systemhotelowy.service.UserService;
 
@@ -18,59 +20,43 @@ import java.util.stream.Collectors;
 public class UserController {
 
     private final UserService userService;
+    private final UserMapper userMapper;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, UserMapper userMapper) {
         this.userService = userService;
-    }
-
-    private User toEntity(UserRequest req) {
-        User u = new User();
-        u.setFirstName(req.getFirstName());
-        u.setLastName(req.getLastName());
-        u.setEmail(req.getEmail());
-        u.setPassword(req.getPassword());
-        u.setRole(req.getRole());
-        return u;
-    }
-
-    private UserResponse toResponse(User u) {
-        UserResponse r = new UserResponse();
-        r.setId(u.getId());
-        r.setFirstName(u.getFirstName());
-        r.setLastName(u.getLastName());
-        r.setEmail(u.getEmail());
-        r.setRole(u.getRole());
-        return r;
+        this.userMapper = userMapper;
     }
 
     @PostMapping
-    public ResponseEntity<UserResponse> create(@RequestBody UserRequest request) {
-        User created = userService.create(toEntity(request));
+    public ResponseEntity<UserResponse> create(@Valid @RequestBody UserRequest request) {
+        User created = userService.create(userMapper.toEntity(request));
         return ResponseEntity.created(URI.create("/api/users/" + created.getId()))
-                .body(toResponse(created));
+                .body(userMapper.toResponse(created));
     }
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public List<UserResponse> listAll() {
-        return userService.findAll().stream().map(this::toResponse).collect(Collectors.toList());
+        return userService.findAll().stream()
+                .map(userMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @userSecurity.isOwner(authentication, #id)")
     public ResponseEntity<UserResponse> getById(@PathVariable Integer id) {
         return userService.findById(id)
-                .map(u -> ResponseEntity.ok(toResponse(u)))
+                .map(u -> ResponseEntity.ok(userMapper.toResponse(u)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @userSecurity.isOwner(authentication, #id)")
-    public ResponseEntity<UserResponse> update(@PathVariable Integer id, @RequestBody UserRequest request) {
-        User toUpdate = toEntity(request);
+    public ResponseEntity<UserResponse> update(@PathVariable Integer id, @Valid @RequestBody UserRequest request) {
+        User toUpdate = userMapper.toEntity(request);
         toUpdate.setId(id);
         User updated = userService.update(toUpdate);
-        return ResponseEntity.ok(toResponse(updated));
+        return ResponseEntity.ok(userMapper.toResponse(updated));
     }
 
     @DeleteMapping("/{id}")

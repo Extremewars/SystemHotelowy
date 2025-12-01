@@ -1,6 +1,7 @@
 package org.systemhotelowy.controller;
 
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,8 @@ import org.systemhotelowy.dto.LoginRequest;
 import org.systemhotelowy.dto.LoginResponse;
 import org.systemhotelowy.dto.UserRequest;
 import org.systemhotelowy.dto.UserResponse;
-import org.systemhotelowy.model.ROLE;
+import org.systemhotelowy.mapper.UserMapper;
+import org.systemhotelowy.model.Role;
 import org.systemhotelowy.model.User;
 import org.systemhotelowy.service.JwtService;
 import org.systemhotelowy.service.UserService;
@@ -36,14 +38,16 @@ public class AuthController {
     private UserDetailsService userDetailsService;
     @Autowired
     private UserService userService;
+    @Autowired
+    private UserMapper userMapper;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         Authentication auth;
         try {
             auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            loginRequest.getUsername(),
+                            loginRequest.getEmail(),
                             loginRequest.getPassword()
                     )
             );
@@ -57,34 +61,21 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody UserRequest request){
+    public ResponseEntity<?> register(@Valid @RequestBody UserRequest request){
         if (request.getRole() == null) {
-            request.setRole(ROLE.USER);
+            request.setRole(Role.USER);
         }
-        if (request.getEmail() == null || request.getEmail().isBlank() ||
-            request.getPassword() == null || request.getPassword().isBlank()) {
-            return ResponseEntity.badRequest().body("Email i hasło są wymagane");
-        }
+        
         if (userService.findByEmail(request.getEmail()).isPresent()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Użytkownik o podanym email już istnieje");
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("Użytkownik o podanym email już istnieje");
         }
 
-        User u = new User();
-        u.setFirstName(request.getFirstName());
-        u.setLastName(request.getLastName());
-        u.setEmail(request.getEmail());
-        u.setPassword(request.getPassword());
-        u.setRole(request.getRole());
+        User user = userMapper.toEntity(request);
+        User created = userService.create(user);
+        UserResponse response = userMapper.toResponse(created);
 
-        User created = userService.create(u);
-
-        UserResponse resp = new UserResponse();
-        resp.setId(created.getId());
-        resp.setFirstName(created.getFirstName());
-        resp.setLastName(created.getLastName());
-        resp.setEmail(created.getEmail());
-        resp.setRole(created.getRole());
-
-        return ResponseEntity.created(URI.create("/api/users/" + created.getId())).body(resp);
+        return ResponseEntity.created(URI.create("/api/users/" + created.getId()))
+                .body(response);
     }
 }

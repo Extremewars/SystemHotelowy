@@ -1,6 +1,6 @@
 package org.systemhotelowy.model;
 
-public enum ROLE {
+public enum Role {
     USER,
     ADMIN
 }

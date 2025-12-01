@@ -1,6 +1,6 @@
 package org.systemhotelowy.dto;
 
-import org.systemhotelowy.model.ROLE;
+import org.systemhotelowy.model.Role;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -13,5 +13,5 @@ public class UserResponse {
     private String firstName;
     private String lastName;
     private String email;
-    private ROLE role;
+    private Role role;
 }
