@@ -1,23 +1,48 @@
 package org.systemhotelowy.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import lombok.*;
+import lombok.experimental.FieldNameConstants;
 
 @Entity
-@Data
-@AllArgsConstructor
+@Table(name = "users",
+        uniqueConstraints = @UniqueConstraint(name = "uk_users_email", columnNames = "email"))
+@Getter
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@ToString(exclude = "password")
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@FieldNameConstants
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Integer id;
+
+    @NotBlank
+    @Column(nullable = false)
     private String firstName;
+
+    @NotBlank
+    @Column(nullable = false)
     private String lastName;
-    @Column(unique = true)
+
+    @Email
+    @NotBlank
+    @Column(nullable = false)
     private String email;
+
+    @NotBlank
+    @JsonIgnore
+    @Column(nullable = false)
     private String password;
+
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Role role;
 }

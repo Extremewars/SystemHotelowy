@@ -1,8 +1,8 @@
 package org.systemhotelowy.controller;
 
-
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,17 +28,24 @@ import java.net.URI;
 
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "Authentication", description = "Logowanie i rejestracja użytkowników")
 public class AuthController {
-    @Autowired
-    private AuthenticationManager authenticationManager;
-    @Autowired
-    private JwtService jwtService;
-    @Autowired
-    private UserService userService;
-    @Autowired
-    private UserMapper userMapper;
+
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
+    private final UserService userService;
+    private final UserMapper userMapper;
+
+    public AuthController(AuthenticationManager authenticationManager, JwtService jwtService,
+                          UserService userService, UserMapper userMapper) {
+        this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
+        this.userService = userService;
+        this.userMapper = userMapper;
+    }
 
     @PostMapping("/login")
+    @Operation(summary = "Logowanie", description = "Uwierzytelnia użytkownika i zwraca token JWT.")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         Authentication auth;
         try {
@@ -58,7 +65,8 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody UserRequest request){
+    @Operation(summary = "Rejestracja", description = "Rejestruje nowego użytkownika w systemie.")
+    public ResponseEntity<?> register(@Valid @RequestBody UserRequest request) {
         if (request.getRole() == null) {
             request.setRole(Role.USER);
         }

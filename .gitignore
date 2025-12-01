@@ -71,3 +71,4 @@ error-screenshots/
 *.ipr
 out/
 /frontend/generated/
+/.vscode/settings.json

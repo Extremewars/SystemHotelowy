@@ -1,6 +1,7 @@
 package org.systemhotelowy.controller;
 
-
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
+@Tag(name = "Users", description = "Zarządzanie użytkownikami")
 public class UserController {
 
     private final UserService userService;
@@ -28,6 +30,8 @@ public class UserController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Utwórz nowego użytkownika", description = "Tworzy nowego użytkownika w systemie. Wymaga roli ADMIN.")
     public ResponseEntity<UserResponse> create(@Valid @RequestBody UserRequest request) {
         User created = userService.create(userMapper.toEntity(request));
         return ResponseEntity.created(URI.create("/api/users/" + created.getId()))
@@ -36,6 +40,7 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Pobierz wszystkich użytkowników", description = "Zwraca listę wszystkich użytkowników. Wymaga roli ADMIN.")
     public List<UserResponse> listAll() {
         return userService.findAll().stream()
                 .map(userMapper::toResponse)
@@ -44,6 +49,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @userSecurity.isOwner(authentication, #id)")
+    @Operation(summary = "Pobierz użytkownika po ID", description = "Zwraca szczegóły użytkownika. Dostępne dla ADMIN lub właściciela konta.")
     public ResponseEntity<UserResponse> getById(@PathVariable Integer id) {
         return userService.findById(id)
                 .map(u -> ResponseEntity.ok(userMapper.toResponse(u)))
@@ -52,6 +58,7 @@ public class UserController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @userSecurity.isOwner(authentication, #id)")
+    @Operation(summary = "Aktualizuj użytkownika", description = "Aktualizuje dane użytkownika. Dostępne dla ADMIN lub właściciela konta.")
     public ResponseEntity<UserResponse> update(@PathVariable Integer id, @Valid @RequestBody UserRequest request) {
         User toUpdate = userMapper.toEntity(request);
         toUpdate.setId(id);
@@ -61,6 +68,7 @@ public class UserController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Usuń użytkownika", description = "Usuwa użytkownika o podanym ID. Wymaga roli ADMIN.")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         userService.deleteById(id);
         return ResponseEntity.noContent().build();
