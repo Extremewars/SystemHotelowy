@@ -26,7 +26,7 @@ public class UserRequest {
     @Size(min = 6, message = "Hasło musi mieć co najmniej 6 znaków")
     private String password;
     
-    private Role role;
+    private Role role = Role.USER;
     
     public UserRequest(String firstName, String lastName, String email, String password) {
         this.firstName = firstName;
