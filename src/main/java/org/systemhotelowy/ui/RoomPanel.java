@@ -102,17 +102,15 @@ public class RoomPanel extends VerticalLayout {
 
         FormLayout form = new FormLayout();
         TextField roomNumber = new TextField("Numer pokoju");
-        ComboBox<String> status = new ComboBox<>("Status");
-        status.setItems("Wolny", "Zajęty", "Awaria");
         ComboBox<String> worker = new ComboBox<>("Pracownik");
         worker.setItems("Anna", "Jan", "Maria", "Brak przypisania");
 
-        form.add(roomNumber, status, worker);
+        form.add(roomNumber, worker);
 
         Button save = new Button("Zapisz", e -> {
             roomGrid.getListDataView().addItem(new RoomRow(
                     roomNumber.getValue(),
-                    status.getValue(),
+                    "Wolny",
                     worker.getValue(),
                     "-",
                     ""
