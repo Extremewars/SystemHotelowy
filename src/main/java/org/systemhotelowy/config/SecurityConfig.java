@@ -65,12 +65,15 @@ public class SecurityConfig {
                                 "/resources/**",
                                 "/manifest.webmanifest",
                                 "/sw.js",
-                                "/offline.html"
+                                "/offline.html",
+                                "/manager"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter,
                         UsernamePasswordAuthenticationFilter.class);
+
+
         return http.build();
     }
     @Bean
