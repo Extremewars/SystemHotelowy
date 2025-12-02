@@ -4,17 +4,20 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.function.Function;
 
 @Service
 public class JwtService {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtService.class);
 
     @Value("${jwt.secret}")
     private String jwtSecret;
@@ -27,8 +30,8 @@ public class JwtService {
             byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
             return Keys.hmacShaKeyFor(keyBytes);
         } catch (IllegalArgumentException e) {
-            byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
-            return Keys.hmacShaKeyFor(keyBytes);
+            logger.error("JWT secret is not a valid Base64 encoded string. Please check your configuration.", e);
+            throw new IllegalStateException("JWT secret key configuration error", e);
         }
     }
 
@@ -40,7 +43,7 @@ public class JwtService {
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(now)
                 .setExpiration(exp)
-                .signWith(getSigningKey()) // JJWT sam dobiera algorytm
+                .signWith(getSigningKey())
                 .compact();
     }
 
@@ -49,12 +52,9 @@ public class JwtService {
             final String username = extractUsername(token);
             return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
         } catch (Exception e) {
+            logger.warn("JWT token validation failed: {}", e.getMessage());
             return false;
         }
-    }
-
-    public boolean validateToken(String token, UserDetails userDetails) {
-        return isTokenValid(token, userDetails);
     }
 
     public String extractUsername(String token) {

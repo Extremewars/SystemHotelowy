@@ -1,17 +1,16 @@
 package org.systemhotelowy.dto;
 
-import org.systemhotelowy.model.Role;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserResponse {
-    private Integer id;
+public class UserTaskCountResponse {
+    private Integer userId;
     private String firstName;
     private String lastName;
     private String email;
-    private Role role;
+    private Long taskCount;
 }

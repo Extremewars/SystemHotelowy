@@ -1,23 +1,24 @@
 package org.systemhotelowy.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.FieldNameConstants;
 
 @Entity
-@Table(name = "users",
-        uniqueConstraints = @UniqueConstraint(name = "uk_users_email", columnNames = "email"))
+@Table(name = "rooms",
+        uniqueConstraints = @UniqueConstraint(name = "uk_rooms_number", columnNames = "number"),
+        indexes = {
+                @Index(name = "idx_rooms_floor", columnList = "floor")
+        })
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = "password")
+@ToString
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @FieldNameConstants
-public class User {
+public class Room {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,23 +27,16 @@ public class User {
 
     @NotBlank
     @Column(nullable = false)
-    private String firstName;
+    private String number;
 
-    @NotBlank
-    @Column(nullable = false)
-    private String lastName;
-
-    @Email
-    @NotBlank
-    @Column(nullable = false)
-    private String email;
-
-    @NotBlank
-    @JsonIgnore
-    @Column(nullable = false)
-    private String password;
+    @Column
+    private Integer floor;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Role role;
+    private RoomType type;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RoomStatus roomStatus;
 }
