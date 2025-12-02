@@ -71,7 +71,8 @@ public class SecurityConfig {
                                 "/resources/**",
                                 "/manifest.webmanifest",
                                 "/sw.js",
-                                "/offline.html"
+                                "/offline.html",
+                                "/manager"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
