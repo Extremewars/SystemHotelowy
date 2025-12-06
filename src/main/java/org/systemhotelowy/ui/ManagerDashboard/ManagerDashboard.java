@@ -46,14 +46,14 @@ public class ManagerDashboard extends VerticalLayout {
         //       GÓRNY PASEK + KPI
         // =========================
         DashboardTopBar topBar = new DashboardTopBar("Panel Kierownika", authService, securityHelper);
-        KpiPanel kpiPanel = new KpiPanel();
+        KpiPanel kpiPanel = new KpiPanel(roomService, taskService);
 
         add(topBar, kpiPanel);
 
         // =========================
         //       PANEL POKOI
         // =========================
-        RoomPanel roomPanel = new RoomPanel();
+        RoomPanel roomPanel = new RoomPanel(roomService, taskService, userService);
         add(roomPanel);
 
         // =========================

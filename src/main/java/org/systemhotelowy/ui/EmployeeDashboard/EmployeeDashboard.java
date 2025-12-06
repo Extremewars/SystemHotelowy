@@ -42,23 +42,19 @@ public class EmployeeDashboard extends VerticalLayout {
         //       GÓRNY PASEK + KPI
         // =========================
         DashboardTopBar topBar = new DashboardTopBar("Panel Pracownika", authService, securityHelper);
-        org.systemhotelowy.ui.EmployeeDashboard.KpiPanel kpiPanel = new KpiPanel();
+        KpiPanel kpiPanel = new KpiPanel(roomService, taskService, authService);
 
         add(topBar, kpiPanel);
 
         // =========================
-        //       PANEL POKOI
+        //       PANEL ZADAŃ
         // =========================
-        RoomPanel roomPanel = new RoomPanel();
-        add(roomPanel);
-
-        // =========================
-        //       SIATKA REZERWACJI
-        // =========================
+        TaskPanel taskPanel = new TaskPanel(taskService, authService);
+        add(taskPanel);
 
         // Rozciąganie paneli
         setFlexGrow(0, topBar);       // top bar nie rośnie
         setFlexGrow(0, kpiPanel);     // KPI nie rośnie
-        setFlexGrow(1, roomPanel);    // roomPanel rośnie
+        setFlexGrow(1, taskPanel);    // taskPanel rośnie
     }
 }
