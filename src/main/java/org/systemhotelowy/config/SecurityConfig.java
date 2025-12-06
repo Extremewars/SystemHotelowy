@@ -73,7 +73,8 @@ public class SecurityConfig {
                                 "/sw.js",
                                 "/offline.html",
                                 "/manager",
-                                "/employee"
+                                "/employee",
+                                "/login"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
