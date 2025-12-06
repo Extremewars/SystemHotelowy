@@ -3,17 +3,51 @@ package org.systemhotelowy.ui;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.EmailField;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.auth.AnonymousAllowed;
+import org.systemhotelowy.dto.UserRequest;
+import org.systemhotelowy.mapper.UserMapper;
+import org.systemhotelowy.model.Role;
+import org.systemhotelowy.model.User;
+import org.systemhotelowy.service.UserService;
+import org.systemhotelowy.utils.VaadinSecurityHelper;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 
+/**
+ * Widok logowania i rejestracji z prawdziwą integracją Spring Security.
+ */
 @Route("login")
+@AnonymousAllowed
 public class LoginView extends VerticalLayout {
 
-    public LoginView() {
+    private final AuthenticationManager authenticationManager;
+    private final UserService userService;
+    private final UserMapper userMapper;
+    private final VaadinSecurityHelper securityHelper;
+
+    public LoginView(
+            AuthenticationManager authenticationManager,
+            UserService userService,
+            UserMapper userMapper,
+            VaadinSecurityHelper securityHelper
+    ) {
+        this.authenticationManager = authenticationManager;
+        this.userService = userService;
+        this.userMapper = userMapper;
+        this.securityHelper = securityHelper;
+        
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.CENTER);
@@ -36,12 +70,16 @@ public class LoginView extends VerticalLayout {
 
         EmailField emailFieldLogin = new EmailField("Email");
         emailFieldLogin.setWidthFull();
+        emailFieldLogin.setRequired(true);
+        emailFieldLogin.setErrorMessage("Podaj poprawny email");
 
         PasswordField passwordField = new PasswordField("Hasło");
         passwordField.setWidthFull();
+        passwordField.setRequired(true);
 
         Button loginButton = new Button("Zaloguj");
         loginButton.setWidthFull();
+        loginButton.addClickListener(e -> handleLogin(emailFieldLogin.getValue(), passwordField.getValue()));
 
         Span switchToRegister = new Span("Nie masz konta? Zarejestruj się");
         switchToRegister.getStyle().set("cursor", "pointer");
@@ -68,28 +106,50 @@ public class LoginView extends VerticalLayout {
 
         H2 registerTitle = new H2("Rejestracja");
 
+        TextField firstNameField = new TextField("Imię");
+        firstNameField.setWidthFull();
+        firstNameField.setRequired(true);
+
+        TextField lastNameField = new TextField("Nazwisko");
+        lastNameField.setWidthFull();
+        lastNameField.setRequired(true);
+
         EmailField emailRegister = new EmailField("Email");
         emailRegister.setWidthFull();
+        emailRegister.setRequired(true);
 
         PasswordField regPassword = new PasswordField("Hasło");
         regPassword.setWidthFull();
+        regPassword.setRequired(true);
+        regPassword.setHelperText("Minimum 6 znaków");
 
         PasswordField regConfirmPassword = new PasswordField("Potwierdź hasło");
         regConfirmPassword.setWidthFull();
+        regConfirmPassword.setRequired(true);
 
         RadioButtonGroup<String> roleSelector = new RadioButtonGroup<>();
         roleSelector.setLabel("Rola");
         roleSelector.setItems("Pracownik", "Kierownik");
+        roleSelector.setValue("Pracownik");
 
         Button registerButton = new Button("Zarejestruj");
         registerButton.setWidthFull();
+        registerButton.addClickListener(e -> handleRegister(
+                firstNameField.getValue(),
+                lastNameField.getValue(),
+                emailRegister.getValue(),
+                regPassword.getValue(),
+                regConfirmPassword.getValue(),
+                roleSelector.getValue()
+        ));
 
         Span switchToLogin = new Span("Masz już konto? Zaloguj się");
         switchToLogin.getStyle().set("cursor", "pointer");
         switchToLogin.getStyle().set("color", "blue");
         switchToLogin.getStyle().set("text-decoration", "underline");
 
-        registerLayout.add(registerTitle, emailRegister, regPassword, regConfirmPassword, roleSelector, registerButton, switchToLogin);
+        registerLayout.add(registerTitle, firstNameField, lastNameField, emailRegister, 
+                          regPassword, regConfirmPassword, roleSelector, registerButton, switchToLogin);
         registerCard.add(registerLayout);
 
         // ===========================
@@ -109,5 +169,83 @@ public class LoginView extends VerticalLayout {
         // DODANIE DO LAYOUTU
         // ===========================
         add(loginCard, registerCard);
+    }
+
+    /**
+     * Obsługa logowania przez Spring Security.
+     */
+    private void handleLogin(String email, String password) {
+        if (email == null || email.isBlank() || password == null || password.isBlank()) {
+            showError("Wypełnij wszystkie pola");
+            return;
+        }
+
+        try {
+            // Autentykacja przez Spring Security
+            Authentication auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, password)
+            );
+            SecurityContextHolder.getContext().setAuthentication(auth);
+            
+            showSuccess("Zalogowano pomyślnie!");
+            securityHelper.navigateToDashboard();
+            
+        } catch (AuthenticationException e) {
+            showError("Nieprawidłowy email lub hasło");
+        }
+    }
+
+    /**
+     * Obsługa rejestracji nowego użytkownika.
+     */
+    private void handleRegister(String firstName, String lastName, String email, 
+                                String password, String confirmPassword, String role) {
+        // Walidacja
+        if (firstName == null || firstName.isBlank() ||
+            lastName == null || lastName.isBlank() ||
+            email == null || email.isBlank() ||
+            password == null || password.isBlank()) {
+            showError("Wypełnij wszystkie pola");
+            return;
+        }
+
+        if (password.length() < 6) {
+            showError("Hasło musi mieć co najmniej 6 znaków");
+            return;
+        }
+
+        if (!password.equals(confirmPassword)) {
+            showError("Hasła nie są identyczne");
+            return;
+        }
+
+        // Sprawdzenie czy użytkownik już istnieje
+        if (userService.findByEmail(email).isPresent()) {
+            showError("Użytkownik o podanym emailu już istnieje");
+            return;
+        }
+
+        // Mapowanie roli
+        Role userRole = "Kierownik".equals(role) ? Role.MANAGER : Role.CLEANER;
+
+        // Tworzenie użytkownika
+        UserRequest request = new UserRequest(firstName, lastName, email, password, userRole);
+        User user = userMapper.toEntity(request);
+        userService.create(user);
+
+        showSuccess("Rejestracja udana! Możesz się teraz zalogować.");
+        
+        // Automatyczne logowanie po rejestracji
+        handleLogin(email, password);
+    }
+
+    private void showError(String message) {
+        Notification notification = Notification.show(message, 3000, Notification.Position.TOP_CENTER);
+        notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+    }
+
+    private void showSuccess(String message) {
+        Notification notification = Notification.show(message, 3000, Notification.Position.TOP_CENTER);
+        notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
 }
