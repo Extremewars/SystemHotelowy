@@ -6,7 +6,6 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
-
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -24,7 +23,10 @@ public class ReservationCalendarGrid extends VerticalLayout {
     private List<ReservationRow> reservations = new ArrayList<>();
 
     private LocalDate windowStart = LocalDate.now().minusDays(1);
-    private int WINDOW_SIZE = 14;
+    private final int WINDOW_SIZE = 14;
+
+    private Span monthHeader;
+    private Span rangeLabel;
 
     public ReservationCalendarGrid() {
         setSpacing(true);
@@ -38,28 +40,31 @@ public class ReservationCalendarGrid extends VerticalLayout {
                 .set("border-radius", "8px")
                 .set("box-shadow", "0 2px 8px rgba(0,0,0,0.1)");
 
-        Button prevBtn = new Button("◀", e -> {
+        // ======= PAGINATION =======
+        Button prevBtn = new Button("<", e -> {
             windowStart = windowStart.minusDays(WINDOW_SIZE);
             refresh();
         });
 
-        Button nextBtn = new Button("▶", e -> {
+        Button nextBtn = new Button(">", e -> {
             windowStart = windowStart.plusDays(WINDOW_SIZE);
             refresh();
         });
 
-        HorizontalLayout pager = new HorizontalLayout(prevBtn, nextBtn);
+        rangeLabel = new Span();
+        rangeLabel.setId("range-label");
+        rangeLabel.getStyle().set("font-weight", "600").set("font-size", "14px");
+
+        HorizontalLayout pager = new HorizontalLayout(prevBtn, rangeLabel, nextBtn);
+        pager.setAlignItems(Alignment.CENTER);
+
+        // ======= MONTH HEADER =======
+        monthHeader = buildMonthHeader();
 
         Button openFormButton = new Button("Dodaj rezerwację");
         openFormButton.addClickListener(e -> openReservationDialog(null, null));
 
-        Button zoom7 = new Button("7 dni", e -> { WINDOW_SIZE = 7; refresh(); });
-        Button zoom14 = new Button("14 dni", e -> { WINDOW_SIZE = 14; refresh(); });
-        Button zoom30 = new Button("30 dni", e -> { WINDOW_SIZE = 30; refresh(); });
-
-        HorizontalLayout zoom = new HorizontalLayout(zoom7, zoom14, zoom30);
-
-        HorizontalLayout header = new HorizontalLayout(pager, zoom, openFormButton);
+        HorizontalLayout header = new HorizontalLayout(monthHeader, pager, openFormButton);
         header.setWidthFull();
         header.setJustifyContentMode(JustifyContentMode.BETWEEN);
 
@@ -68,7 +73,7 @@ public class ReservationCalendarGrid extends VerticalLayout {
     }
 
     // ------------------------------------------------------------------------
-    // CELL CLICK HANDLING
+    // CLICK HANDLING
     // ------------------------------------------------------------------------
 
     private void handleCellClick(Room room, LocalDate day) {
@@ -86,7 +91,6 @@ public class ReservationCalendarGrid extends VerticalLayout {
             openReservationDialog(room, day);
         }
     }
-
 
     // ------------------------------------------------------------------------
     // ADD RESERVATION DIALOG
@@ -137,7 +141,6 @@ public class ReservationCalendarGrid extends VerticalLayout {
         dialog.open();
     }
 
-
     // ------------------------------------------------------------------------
     // EDIT RESERVATION DIALOG
     // ------------------------------------------------------------------------
@@ -169,7 +172,6 @@ public class ReservationCalendarGrid extends VerticalLayout {
         dialog.open();
     }
 
-
     // ------------------------------------------------------------------------
     // MOCK DATA
     // ------------------------------------------------------------------------
@@ -191,27 +193,56 @@ public class ReservationCalendarGrid extends VerticalLayout {
                 "Anna Nowak", "987654321"));
     }
 
+    // ------------------------------------------------------------------------
+    // MONTH HEADER
+    // ------------------------------------------------------------------------
+
+    private Span buildMonthHeader() {
+        LocalDate start = windowStart;
+        LocalDate end = windowStart.plusDays(WINDOW_SIZE - 1);
+        Locale pl = Locale.forLanguageTag("pl");
+
+        String startMonth = start.getMonth().getDisplayName(TextStyle.FULL, pl) + " " + start.getYear();
+        String endMonth = end.getMonth().getDisplayName(TextStyle.FULL, pl) + " " + end.getYear();
+
+        Span s = new Span("[" + startMonth + "] – [" + endMonth + "]");
+        s.getStyle().set("font-weight", "600").set("font-size", "16px");
+        return s;
+    }
+
+    private String formatRange(LocalDate start, LocalDate end) {
+        Locale pl = Locale.forLanguageTag("pl");
+        return start.getDayOfMonth() + " " +
+                start.getMonth().getDisplayName(TextStyle.FULL, pl) +
+                " – " +
+                end.getDayOfMonth() + " " +
+                end.getMonth().getDisplayName(TextStyle.FULL, pl);
+    }
 
     // ------------------------------------------------------------------------
-    // REFRESH GRID
+    // GRID REFRESH
     // ------------------------------------------------------------------------
 
     private void refresh() {
         reservationGrid.removeAllColumns();
 
+        // ---- Left columns (narrow, fixed) ----
         reservationGrid.addColumn(ReservationRow::getRoom)
                 .setHeader("Pokój")
                 .setWidth("70px")
-                .getStyle().set("font-weight", "600").set("background-color", "#fafafa");
+                .setFlexGrow(0);
 
         reservationGrid.addColumn(ReservationRow::getMaxPeople)
                 .setHeader("Osoby")
-                .setWidth("60px");
+                .setWidth("60px")
+                .setFlexGrow(0);
 
         reservationGrid.addColumn(ReservationRow::getPrice)
                 .setHeader("Cena")
-                .setWidth("70px");
+                .setWidth("70px")
+                .setFlexGrow(0);
 
+        // ---- Date columns ----
         for (int i = 0; i < WINDOW_SIZE; i++) {
             LocalDate currentDay = windowStart.plusDays(i);
 
@@ -224,8 +255,7 @@ public class ReservationCalendarGrid extends VerticalLayout {
 
             reservationGrid.addComponentColumn(row -> createCell(row, currentDay))
                     .setHeader(header)
-                    .setWidth("60px")
-                    .setFlexGrow(0);
+                    .setFlexGrow(1);
         }
 
         List<ReservationRow> rows = new ArrayList<>();
@@ -233,11 +263,24 @@ public class ReservationCalendarGrid extends VerticalLayout {
             rows.add(new ReservationRow(r.getName(), r.getMaxPeople(), r.getPrice(), null, null, null, null));
 
         reservationGrid.setItems(rows);
+
+        // ---- Update month header ----
+        monthHeader.setText(
+                "[" + windowStart.getMonth().getDisplayName(TextStyle.FULL, Locale.forLanguageTag("pl"))
+                        + " " + windowStart.getYear() + "] – [" +
+                        windowStart.plusDays(WINDOW_SIZE - 1).getMonth()
+                                .getDisplayName(TextStyle.FULL, Locale.forLanguageTag("pl"))
+                        + " " + windowStart.plusDays(WINDOW_SIZE - 1).getYear() + "]"
+        );
+
+        // ---- Update range label ----
+        LocalDate start = windowStart;
+        LocalDate end = windowStart.plusDays(WINDOW_SIZE - 1);
+        rangeLabel.setText(formatRange(start, end));
     }
 
-
     // ------------------------------------------------------------------------
-    // CELL RENDERING (COLOR BARS, ROUNDED CORNERS, HOVER)
+    // CELL RENDERING
     // ------------------------------------------------------------------------
 
     private Div createCell(ReservationRow row, LocalDate day) {
@@ -264,15 +307,17 @@ public class ReservationCalendarGrid extends VerticalLayout {
 
         if (res.isPresent()) {
             ReservationRow rez = res.get();
-
             String color = getColorForGuest(rez.getGuestName());
+
             cell.getStyle().set("background-color", color);
 
             if (day.equals(rez.getCheckIn()))
-                cell.getStyle().set("border-top-left-radius", "12px").set("border-bottom-left-radius", "12px");
+                cell.getStyle().set("border-top-left-radius", "12px")
+                        .set("border-bottom-left-radius", "12px");
 
             if (day.equals(rez.getCheckOut()))
-                cell.getStyle().set("border-top-right-radius", "12px").set("border-bottom-right-radius", "12px");
+                cell.getStyle().set("border-top-right-radius", "12px")
+                        .set("border-bottom-right-radius", "12px");
 
             cell.getElement().setProperty("title",
                     rez.getGuestName() + " (" + rez.getPhone() + ")");
@@ -292,11 +337,6 @@ public class ReservationCalendarGrid extends VerticalLayout {
         return cell;
     }
 
-
-    // ------------------------------------------------------------------------
-    // GENEROWANIE KOLORÓW
-    // ------------------------------------------------------------------------
-
     private String getColorForGuest(String guestName) {
         int hash = Math.abs(guestName.hashCode());
         int r = (hash % 128) + 100;
@@ -304,7 +344,6 @@ public class ReservationCalendarGrid extends VerticalLayout {
         int b = ((hash / (128 * 128)) % 128) + 100;
         return "rgb(" + r + "," + g + "," + b + ")";
     }
-
 
     // ===========================================================
     // MODEL
