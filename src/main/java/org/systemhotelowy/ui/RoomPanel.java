@@ -202,15 +202,14 @@ public class RoomPanel extends VerticalLayout {
         TextArea description = new TextArea("Opis zadania");
         description.setHeight("150px");
 
-        ComboBox<String> status = new ComboBox<>("Status");
-        status.setItems("W trakcie", "Wykonane");
-        status.setValue("W trakcie");
+
 
         Button save = new Button("Zapisz", e -> {
             Task task = new Task(
                     title.getValue(),
                     description.getValue(),
-                    status.getValue()
+                    "W trakcie"
+
             );
 
             selectedRooms.forEach(r -> r.addTask(task));
@@ -218,7 +217,7 @@ public class RoomPanel extends VerticalLayout {
             dialog.close();
         });
 
-        dialog.add(new VerticalLayout(title, description, status, save));
+        dialog.add(new VerticalLayout(title, description, save));
         dialog.open();
     }
 

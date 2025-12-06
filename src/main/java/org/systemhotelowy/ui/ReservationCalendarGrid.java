@@ -5,14 +5,14 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Div;
+
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.time.format.TextStyle;
 import java.util.*;
 
@@ -20,45 +20,46 @@ public class ReservationCalendarGrid extends VerticalLayout {
 
     private Grid<ReservationRow> reservationGrid;
 
-    // Mock list of rooms
     private List<Room> rooms = new ArrayList<>();
-
-    // Mock list of reservations
     private List<ReservationRow> reservations = new ArrayList<>();
 
-    // Calendar pagination
-    private LocalDate windowStart = LocalDate.now().minusDays(1); // yesterday
-    private static final int WINDOW_SIZE = 14; // 14 days window
+    private LocalDate windowStart = LocalDate.now().minusDays(1);
+    private int WINDOW_SIZE = 14;
 
     public ReservationCalendarGrid() {
         setSpacing(true);
-        setPadding(false);
+        setPadding(true);
 
         initMockData();
 
         reservationGrid = new Grid<>(ReservationRow.class, false);
         reservationGrid.setWidthFull();
+        reservationGrid.getStyle()
+                .set("border-radius", "8px")
+                .set("box-shadow", "0 2px 8px rgba(0,0,0,0.1)");
 
-        // --- PAGINATION BUTTONS ---
         Button prevBtn = new Button("◀", e -> {
-            windowStart = windowStart.minusDays(7);
+            windowStart = windowStart.minusDays(WINDOW_SIZE);
             refresh();
         });
 
         Button nextBtn = new Button("▶", e -> {
-            windowStart = windowStart.plusDays(7);
+            windowStart = windowStart.plusDays(WINDOW_SIZE);
             refresh();
         });
 
         HorizontalLayout pager = new HorizontalLayout(prevBtn, nextBtn);
-        pager.setPadding(true);
-        pager.setSpacing(true);
 
-        // Add reservation button
         Button openFormButton = new Button("Dodaj rezerwację");
-        openFormButton.addClickListener(e -> openReservationDialog());
+        openFormButton.addClickListener(e -> openReservationDialog(null, null));
 
-        HorizontalLayout header = new HorizontalLayout(pager, openFormButton);
+        Button zoom7 = new Button("7 dni", e -> { WINDOW_SIZE = 7; refresh(); });
+        Button zoom14 = new Button("14 dni", e -> { WINDOW_SIZE = 14; refresh(); });
+        Button zoom30 = new Button("30 dni", e -> { WINDOW_SIZE = 30; refresh(); });
+
+        HorizontalLayout zoom = new HorizontalLayout(zoom7, zoom14, zoom30);
+
+        HorizontalLayout header = new HorizontalLayout(pager, zoom, openFormButton);
         header.setWidthFull();
         header.setJustifyContentMode(JustifyContentMode.BETWEEN);
 
@@ -66,7 +67,32 @@ public class ReservationCalendarGrid extends VerticalLayout {
         add(header, reservationGrid);
     }
 
-    private void openReservationDialog() {
+    // ------------------------------------------------------------------------
+    // CELL CLICK HANDLING
+    // ------------------------------------------------------------------------
+
+    private void handleCellClick(Room room, LocalDate day) {
+        Optional<ReservationRow> found = reservations.stream()
+                .filter(r ->
+                        r.getRoom().equals(room.getName()) &&
+                                !r.getCheckIn().isAfter(day) &&
+                                !r.getCheckOut().isBefore(day)
+                )
+                .findFirst();
+
+        if (found.isPresent()) {
+            openReservationEditDialog(found.get());
+        } else {
+            openReservationDialog(room, day);
+        }
+    }
+
+
+    // ------------------------------------------------------------------------
+    // ADD RESERVATION DIALOG
+    // ------------------------------------------------------------------------
+
+    private void openReservationDialog(Room preselectedRoom, LocalDate preselectedDay) {
         Dialog dialog = new Dialog();
         dialog.setWidth("600px");
 
@@ -80,20 +106,19 @@ public class ReservationCalendarGrid extends VerticalLayout {
         DatePicker checkInField = new DatePicker("Check-in");
         DatePicker checkOutField = new DatePicker("Check-out");
 
-        Button addReservationButton = new Button("Zapisz");
-        Button cancelButton = new Button("Anuluj", e -> dialog.close());
+        if (preselectedRoom != null) roomField.setValue(preselectedRoom);
+        if (preselectedDay != null) {
+            checkInField.setValue(preselectedDay);
+            checkOutField.setValue(preselectedDay.plusDays(1));
+        }
 
-        addReservationButton.addClickListener(e -> {
-            if (guestNameField.isEmpty() || phoneField.isEmpty() ||
-                    roomField.getValue() == null || checkInField.isEmpty() || checkOutField.isEmpty()) {
-                return;
-            }
+        Button addBtn = new Button("Zapisz", e -> {
+            if (roomField.isEmpty() || checkInField.isEmpty() || checkOutField.isEmpty()) return;
 
-            Room selectedRoom = roomField.getValue();
             reservations.add(new ReservationRow(
-                    selectedRoom.getName(),
-                    selectedRoom.getMaxPeople(),
-                    selectedRoom.getPrice(),
+                    roomField.getValue().getName(),
+                    roomField.getValue().getMaxPeople(),
+                    roomField.getValue().getPrice(),
                     checkInField.getValue(),
                     checkOutField.getValue(),
                     guestNameField.getValue(),
@@ -104,13 +129,50 @@ public class ReservationCalendarGrid extends VerticalLayout {
             refresh();
         });
 
-        HorizontalLayout buttonsLayout = new HorizontalLayout(addReservationButton, cancelButton);
-        VerticalLayout dialogLayout = new VerticalLayout(guestNameField, phoneField, roomField,
-                checkInField, checkOutField, buttonsLayout);
+        dialog.add(new VerticalLayout(
+                guestNameField, phoneField, roomField, checkInField, checkOutField,
+                new HorizontalLayout(addBtn, new Button("Anuluj", e -> dialog.close()))
+        ));
 
-        dialog.add(dialogLayout);
         dialog.open();
     }
+
+
+    // ------------------------------------------------------------------------
+    // EDIT RESERVATION DIALOG
+    // ------------------------------------------------------------------------
+
+    private void openReservationEditDialog(ReservationRow reservation) {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("600px");
+
+        TextField guestNameField = new TextField("Imię i nazwisko gościa", reservation.getGuestName());
+        TextField phoneField = new TextField("Numer telefonu", reservation.getPhone());
+
+        DatePicker checkInField = new DatePicker("Check-in", reservation.getCheckIn());
+        DatePicker checkOutField = new DatePicker("Check-out", reservation.getCheckOut());
+
+        Button editBtn = new Button("Zapisz zmiany", e -> {
+            reservation.setGuestName(guestNameField.getValue());
+            reservation.setPhone(phoneField.getValue());
+            reservation.setCheckIn(checkInField.getValue());
+            reservation.setCheckOut(checkOutField.getValue());
+            dialog.close();
+            refresh();
+        });
+
+        dialog.add(new VerticalLayout(
+                guestNameField, phoneField, checkInField, checkOutField,
+                new HorizontalLayout(editBtn, new Button("Anuluj", e -> dialog.close()))
+        ));
+
+        dialog.open();
+    }
+
+
+    // ------------------------------------------------------------------------
+    // MOCK DATA
+    // ------------------------------------------------------------------------
 
     private void initMockData() {
         rooms.add(new Room("101", 2, 300));
@@ -129,76 +191,125 @@ public class ReservationCalendarGrid extends VerticalLayout {
                 "Anna Nowak", "987654321"));
     }
 
+
+    // ------------------------------------------------------------------------
+    // REFRESH GRID
+    // ------------------------------------------------------------------------
+
     private void refresh() {
         reservationGrid.removeAllColumns();
 
-        // FIXED columns:
-        reservationGrid.addColumn(ReservationRow::getRoom).setHeader("Pokój").setAutoWidth(true);
-        reservationGrid.addColumn(ReservationRow::getMaxPeople).setHeader("Max osób").setAutoWidth(true);
-        reservationGrid.addColumn(ReservationRow::getPrice).setHeader("Cena/doba").setAutoWidth(true);
+        reservationGrid.addColumn(ReservationRow::getRoom)
+                .setHeader("Pokój")
+                .setWidth("70px")
+                .getStyle().set("font-weight", "600").set("background-color", "#fafafa");
 
-        // Calendar columns
+        reservationGrid.addColumn(ReservationRow::getMaxPeople)
+                .setHeader("Osoby")
+                .setWidth("60px");
+
+        reservationGrid.addColumn(ReservationRow::getPrice)
+                .setHeader("Cena")
+                .setWidth("70px");
+
         for (int i = 0; i < WINDOW_SIZE; i++) {
             LocalDate currentDay = windowStart.plusDays(i);
 
-            String dayLabel = currentDay.getDayOfMonth() +
-                    " (" + currentDay.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.forLanguageTag("pl")) + ")";
+            String dow = currentDay.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.forLanguageTag("pl"));
+            String headerHtml = "<div style='text-align:center;font-size:12px'><b>" +
+                    dow + "</b><br/>" + currentDay.getDayOfMonth() + "</div>";
 
-            reservationGrid.addComponentColumn(row -> {
-                boolean booked = reservations.stream().anyMatch(r ->
-                        r.getRoom().equals(row.getRoom()) &&
-                                r.getCheckIn() != null &&
-                                r.getCheckOut() != null &&
-                                !r.getCheckIn().isAfter(currentDay) &&
-                                !r.getCheckOut().isBefore(currentDay)
-                );
+            Span header = new Span();
+            header.getElement().setProperty("innerHTML", headerHtml);
 
-                Span cell = new Span(booked ? "X" : "");
-                cell.getStyle()
-                        .set("display", "block")
-                        .set("text-align", "center")
-                        .set("background-color", booked ? "lightblue" : "transparent")
-                        .set("border", "1px solid #ddd")
-                        .set("padding", "4px");
-                return cell;
-
-            }).setHeader(dayLabel);
+            reservationGrid.addComponentColumn(row -> createCell(row, currentDay))
+                    .setHeader(header)
+                    .setWidth("60px")
+                    .setFlexGrow(0);
         }
 
-        // Generate rows: one per room
         List<ReservationRow> rows = new ArrayList<>();
-        for (Room r : rooms) {
-            rows.add(new ReservationRow(r.getName(), r.getMaxPeople(), r.getPrice(),
-                    null, null, null, null));
-        }
+        for (Room r : rooms)
+            rows.add(new ReservationRow(r.getName(), r.getMaxPeople(), r.getPrice(), null, null, null, null));
 
         reservationGrid.setItems(rows);
     }
 
 
-    // -------------------------------------------------------
-    // ROOM MODEL
-    // -------------------------------------------------------
-    public static class Room {
-        private String name;
-        private int maxPeople;
-        private double price;
+    // ------------------------------------------------------------------------
+    // CELL RENDERING (COLOR BARS, ROUNDED CORNERS, HOVER)
+    // ------------------------------------------------------------------------
 
-        public Room(String name, int maxPeople, double price) {
-            this.name = name;
-            this.maxPeople = maxPeople;
-            this.price = price;
+    private Div createCell(ReservationRow row, LocalDate day) {
+        Div cell = new Div();
+        cell.getStyle()
+                .set("border", "1px solid #e0e0e0")
+                .set("padding", "6px")
+                .set("border-radius", "4px")
+                .set("transition", "background-color 0.15s")
+                .set("cursor", "pointer")
+                .set("height", "26px");
+
+        Room room = rooms.stream()
+                .filter(r -> r.getName().equals(row.getRoom()))
+                .findFirst().orElse(null);
+
+        Optional<ReservationRow> res = reservations.stream()
+                .filter(r ->
+                        r.getRoom().equals(row.getRoom()) &&
+                                !r.getCheckIn().isAfter(day) &&
+                                !r.getCheckOut().isBefore(day)
+                )
+                .findFirst();
+
+        if (res.isPresent()) {
+            ReservationRow rez = res.get();
+
+            String color = getColorForGuest(rez.getGuestName());
+            cell.getStyle().set("background-color", color);
+
+            if (day.equals(rez.getCheckIn()))
+                cell.getStyle().set("border-top-left-radius", "12px").set("border-bottom-left-radius", "12px");
+
+            if (day.equals(rez.getCheckOut()))
+                cell.getStyle().set("border-top-right-radius", "12px").set("border-bottom-right-radius", "12px");
+
+            cell.getElement().setProperty("title",
+                    rez.getGuestName() + " (" + rez.getPhone() + ")");
+
+        } else {
+            cell.getElement().addEventListener("mouseover", e ->
+                    cell.getStyle().set("background-color", "#f2f2f2"));
+            cell.getElement().addEventListener("mouseout", e ->
+                    cell.getStyle().set("background-color", "transparent"));
         }
 
-        public String getName() { return name; }
-        public int getMaxPeople() { return maxPeople; }
-        public double getPrice() { return price; }
+        LocalDate finalDay = day;
+        Room finalRoom = room;
+
+        cell.addClickListener(e -> handleCellClick(finalRoom, finalDay));
+
+        return cell;
     }
 
 
-    // -------------------------------------------------------
-    // RESERVATION MODEL
-    // -------------------------------------------------------
+    // ------------------------------------------------------------------------
+    // GENEROWANIE KOLORÓW
+    // ------------------------------------------------------------------------
+
+    private String getColorForGuest(String guestName) {
+        int hash = Math.abs(guestName.hashCode());
+        int r = (hash % 128) + 100;
+        int g = ((hash / 128) % 128) + 100;
+        int b = ((hash / (128 * 128)) % 128) + 100;
+        return "rgb(" + r + "," + g + "," + b + ")";
+    }
+
+
+    // ===========================================================
+    // MODEL
+    // ===========================================================
+
     public static class ReservationRow {
         private String room;
         private int maxPeople;
@@ -227,5 +338,10 @@ public class ReservationCalendarGrid extends VerticalLayout {
         public LocalDate getCheckOut() { return checkOut; }
         public String getGuestName() { return guestName; }
         public String getPhone() { return phone; }
+
+        public void setCheckIn(LocalDate d) { this.checkIn = d; }
+        public void setCheckOut(LocalDate d) { this.checkOut = d; }
+        public void setGuestName(String n) { this.guestName = n; }
+        public void setPhone(String p) { this.phone = p; }
     }
 }
