@@ -7,6 +7,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
+import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -183,6 +184,21 @@ public class RoomPanel extends VerticalLayout {
         }).setHeader("Akcje");
         actionsCol.setWidth("260px");
         actionsCol.setFlexGrow(1);
+
+        // ============================
+        // STYLE
+        // ============================
+        roomGrid.getStyle()
+                .set("border", "1px solid #ddd")
+                .set("border-radius", "10px")
+                .set("overflow", "hidden")
+                .set("box-shadow", "0 2px 6px rgba(0,0,0,0.1)");
+        roomGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+        roomGrid.addThemeVariants(
+                GridVariant.LUMO_COLUMN_BORDERS,
+                GridVariant.LUMO_WRAP_CELL_CONTENT
+        );
+        roomGrid.getStyle().set("margin-top", "10px");
 
         // =========================
         // MOCKOWE DANE
