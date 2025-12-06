@@ -18,6 +18,13 @@ public class RoomRow {
         this.notes = notes;
     }
 
+    private List<Report> reports = new ArrayList<>();
+
+    public List<Report> getReports() { return reports; }
+    public void addReport(Report r) { reports.add(r); }
+    public void removeReport(Report r) { reports.remove(r); }
+
+
     public String getRoom() { return room; }
     public String getStatus() { return status; }
     public String getWorker() { return worker; }

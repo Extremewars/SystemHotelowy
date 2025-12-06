@@ -108,26 +108,15 @@ public class RoomPanel extends VerticalLayout {
 
         // Status
         Column<RoomRow> statusCol = roomGrid.addComponentColumn(room -> {
-            Icon icon;
+            Span s = new Span(room.getStatus());
             switch (room.getStatus()) {
-                case "Wolny":
-                    icon = VaadinIcon.CHECK_CIRCLE.create();
-                    icon.setColor("green");
-                    break;
-                case "Zajęty":
-                    icon = VaadinIcon.USER.create();
-                    icon.setColor("blue");
-                    break;
-                case "Awaria":
-                    icon = VaadinIcon.WARNING.create();
-                    icon.setColor("red");
-                    break;
-                default:
-                    icon = VaadinIcon.QUESTION.create();
-                    icon.setColor("gray");
+                case "Wolny" -> s.getStyle().set("color", "green");
+                case "Zajęty" -> s.getStyle().set("color", "blue");
+                case "Awaria" -> s.getStyle().set("color", "red");
             }
-            return icon;
+            return s;
         }).setHeader("Status");
+
         statusCol.setWidth("110px");
         statusCol.setFlexGrow(0);
 
@@ -158,8 +147,30 @@ public class RoomPanel extends VerticalLayout {
 
 
         // Zgłoszenia – szerokie
-        Column<RoomRow> notesCol = roomGrid.addColumn(RoomRow::getNotes)
-                .setHeader("Zgłoszenia");
+        Column<RoomRow> notesCol = roomGrid.addComponentColumn(room -> {
+            VerticalLayout layout = new VerticalLayout();
+            layout.setPadding(false);
+            layout.setSpacing(false);
+
+            for (Report rep : room.getReports()) {
+                Span repLabel = new Span(rep.getTitle() + " (" + rep.getStatus() + ")");
+                repLabel.getStyle().set("cursor", "pointer");
+
+                // Kolor statusu
+                if (rep.getStatus().equals("Nowe")) {
+                    repLabel.getStyle().set("color", "red");
+                } else {
+                    repLabel.getStyle().set("color", "gray");
+                }
+
+                repLabel.addClickListener(e -> openReportDialog(room, rep));
+
+                layout.add(repLabel);
+            }
+
+            return layout;
+        }).setHeader("Zgłoszenia");
+
         notesCol.setWidth("250px");
         notesCol.setFlexGrow(1);
 
@@ -173,12 +184,56 @@ public class RoomPanel extends VerticalLayout {
         actionsCol.setWidth("260px");
         actionsCol.setFlexGrow(1);
 
-        roomGrid.setItems(
-                new RoomRow("101", "Wolny", "Anna", "-", ""),
-                new RoomRow("102", "Zajęty", "Jan", "-", "Brak ręczników"),
-                new RoomRow("103", "Wolny", "Maria", "-", ""),
-                new RoomRow("104", "Awaria", "Brak", "-", "Zepsuta klimatyzacja")
-        );
+        // =========================
+        // MOCKOWE DANE
+        // =========================
+
+        RoomRow r1 = new RoomRow("101", "Wolny", "Anna", "-", "");
+        r1.addReport(new Report("Brak ręczników", "W pokoju 101 brakuje ręczników.", "Nowe"));
+        r1.addReport(new Report("Uszkodzona żarówka", "Przepaliła się żarówka nad łóżkiem.", "Przeczytane"));
+
+        RoomRow r2 = new RoomRow("102", "Zajęty", "Jan", "-", "");
+        RoomRow r3 = new RoomRow("103", "Wolny", "Maria", "-", "");
+        RoomRow r4 = new RoomRow("104", "Awaria", "Brak", "-", "");
+        r4.addReport(new Report("Klimatyzacja nie działa", "Gość zgłosił brak chłodzenia.", "Nowe"));
+
+
+
+    // Pokój 101
+        r1.addTask(new Task(
+                "Wymiana ręczników",
+                "Wymienić zestaw ręczników dla nowych gości.",
+                "W trakcie"
+        ));
+
+        r1.addTask(new Task(
+                "Odświeżenie łazienki",
+                "Umyć kabinę prysznicową i uzupełnić kosmetyki.",
+                "Wykonane"
+        ));
+
+    // Pokój 102
+        r2.addTask(new Task(
+                "Zmiana pościeli",
+                "Wymienić pościel po wyjeździe poprzednich gości.",
+                "W trakcie"
+        ));
+
+    // Pokój 104 (Awaria)
+        r4.addTask(new Task(
+                "Sprawdzenie klimatyzacji",
+                "Technik ma sprawdzić przyczynę usterki klimatyzacji.",
+                "W trakcie"
+        ));
+
+        r4.addTask(new Task(
+                "Zgłoszenie do serwisu",
+                "Przekazać zgłoszenie awarii do zewnętrznego serwisu.",
+                "Wykonane"
+        ));
+
+        roomGrid.setItems(r1, r2, r3, r4);
+
 
         add(topBar, selectionActions, roomGrid);
     }
@@ -278,6 +333,31 @@ public class RoomPanel extends VerticalLayout {
         dialog.add(new VerticalLayout(form, new HorizontalLayout(save, cancel)));
         dialog.open();
     }
+
+    private void openReportDialog(RoomRow room, Report rep) {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("400px");
+
+        Span title = new Span("Tytuł: " + rep.getTitle());
+        Span status = new Span("Status: " + rep.getStatus());
+        Span content = new Span("Treść: " + rep.getContent());
+
+        Button markRead = new Button("Oznacz jako przeczytane", e -> {
+            rep.setStatus("Przeczytane");
+            roomGrid.getDataProvider().refreshAll();
+            dialog.close();
+        });
+
+        Button delete = new Button("Usuń zgłoszenie", e -> {
+            room.removeReport(rep);
+            roomGrid.getDataProvider().refreshAll();
+            dialog.close();
+        });
+
+        dialog.add(new VerticalLayout(title, status, content, markRead, delete));
+        dialog.open();
+    }
+
 
 
 }
