@@ -1,4 +1,4 @@
-package org.systemhotelowy.ui;
+package org.systemhotelowy.ui.ManagerDashboard;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H1;
