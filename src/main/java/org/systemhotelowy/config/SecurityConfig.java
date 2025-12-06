@@ -15,7 +15,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.systemhotelowy.service.JwtService;
 import org.systemhotelowy.utils.JwtAuthenticationFilter;
 
@@ -47,30 +46,30 @@ public class SecurityConfig {
 
     /**
      * SecurityFilterChain dla REST API - używa JWT i jest stateless.
-     * Order(1) oznacza że ta konfiguracja ma priorytet przed VaadinSecurityConfig.
+     * Stosuje się TYLKO do endpointów /api/**, /auth/**, swagger.
+     * Pozostałe ścieżki (/, /login, /manager, /employee) obsługuje VaadinSecurityConfig.
      */
     @Bean
     @Order(1)
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher(new AntPathRequestMatcher("/api/**"))
-                .securityMatcher(new AntPathRequestMatcher("/auth/**"))
-                .securityMatcher(new AntPathRequestMatcher("/swagger-ui/**"))
-                .securityMatcher(new AntPathRequestMatcher("/v3/api-docs/**"))
+                .securityMatcher(
+                        "/api/**",
+                        "/auth/**"
+                )
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/auth/login",
-                                "/auth/register",
-                                "/swagger-ui.html",
-                                "/swagger-ui/**",
-                                "/v3/api-docs",
-                                "/v3/api-docs/**")
-                        .permitAll()
-                        .anyRequest().authenticated())
+                                "/auth/register"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
