@@ -55,11 +55,10 @@ public class RoomPanel extends VerticalLayout {
         // PANEL ZAZNACZONYCH
         // ============================
         Button addTaskBtn = new Button("Dodaj zadanie");
-        Button addNoteBtn = new Button("Dodaj uwagę");
 
         selectedInfo = new Span("Zaznaczono: 0");
 
-        selectionActions = new HorizontalLayout(selectedInfo, addTaskBtn, addNoteBtn);
+        selectionActions = new HorizontalLayout(selectedInfo, addTaskBtn);
         selectionActions.setVisible(false);
         selectionActions.setSpacing(true);
 
@@ -125,9 +124,9 @@ public class RoomPanel extends VerticalLayout {
         tasksCol.setWidth("250px");
         tasksCol.setFlexGrow(1);
 
-        // Uwagi – szerokie
+        // Zgłoszenia – szerokie
         Column<RoomRow> notesCol = roomGrid.addColumn(RoomRow::getNotes)
-                .setHeader("Uwagi");
+                .setHeader("Zgłoszenia");
         notesCol.setWidth("250px");
         notesCol.setFlexGrow(1);
 
@@ -143,7 +142,7 @@ public class RoomPanel extends VerticalLayout {
 
         roomGrid.setItems(
                 new RoomRow("101", "Wolny", "Anna", "-", ""),
-                new RoomRow("102", "Zajęty", "Jan", "-", "Gość przebywa"),
+                new RoomRow("102", "Zajęty", "Jan", "-", "Brak ręczników"),
                 new RoomRow("103", "Wolny", "Maria", "-", ""),
                 new RoomRow("104", "Awaria", "Brak", "-", "Zepsuta klimatyzacja")
         );
