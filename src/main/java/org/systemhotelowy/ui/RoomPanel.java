@@ -39,6 +39,17 @@ public class RoomPanel extends VerticalLayout {
 
         ComboBox<String> workerFilter = new ComboBox<>("Pracownik");
         workerFilter.setItems("Anna", "Jan", "Maria", "Brak przypisania");
+        TextField searchField = new TextField("Szukaj pokoju");
+        searchField.setPlaceholder("np. 101");
+        searchField.setClearButtonVisible(true);
+
+        searchField.addValueChangeListener(e -> {
+            String value = e.getValue().trim();
+            roomGrid.setItems(rooms.stream()
+                    .filter(r -> r.getRoom().contains(value))
+                    .toList());
+        });
+
 
         // Przycisk
         Button addRoomBtn = new Button("Dodaj pokój", e -> openAddRoomDialog());
@@ -47,14 +58,22 @@ public class RoomPanel extends VerticalLayout {
         Span spacer = new Span();
         spacer.getStyle().set("flex-grow", "1");
 
-        HorizontalLayout topBar = new HorizontalLayout(statusFilter, workerFilter, spacer, addRoomBtn);
+        HorizontalLayout topBar = new HorizontalLayout(
+                statusFilter,
+                workerFilter,
+                searchField,
+                spacer,
+                addRoomBtn
+        );
+
         topBar.setWidthFull();
         topBar.setAlignItems(Alignment.END);
 
         // ============================
         // PANEL ZAZNACZONYCH
         // ============================
-        Button addTaskBtn = new Button("Dodaj zadanie");
+        Button addTaskBtn = new Button("Dodaj zadanie", e -> openAddTaskDialog());
+
 
         selectedInfo = new Span("Zaznaczono: 0");
 
@@ -118,11 +137,25 @@ public class RoomPanel extends VerticalLayout {
         workerCol.setWidth("130px");
         workerCol.setFlexGrow(0);
 
-        // Zadania – szerokie
-        Column<RoomRow> tasksCol = roomGrid.addColumn(RoomRow::getTasks)
-                .setHeader("Zadania");
+        Column<RoomRow> tasksCol = roomGrid.addComponentColumn(room -> {
+            VerticalLayout layout = new VerticalLayout();
+            layout.setPadding(false);
+            layout.setSpacing(false);
+
+            for (Task task : room.getTasks()) {
+                Span taskLabel = new Span(task.getTitle() + " (" + task.getStatus() + ")");
+                taskLabel.getStyle().set("cursor", "pointer");
+
+                taskLabel.addClickListener(e -> openTaskInfoDialog(room, task));
+
+                layout.add(taskLabel);
+            }
+
+            return layout;
+        }).setHeader("Zadania");
         tasksCol.setWidth("250px");
         tasksCol.setFlexGrow(1);
+
 
         // Zgłoszenia – szerokie
         Column<RoomRow> notesCol = roomGrid.addColumn(RoomRow::getNotes)
@@ -155,6 +188,59 @@ public class RoomPanel extends VerticalLayout {
         selectedInfo.setText("Zaznaczono: " + count);
         selectionActions.setVisible(count > 0);
     }
+
+    private void openAddTaskDialog() {
+        if (selectedRooms.isEmpty()) {
+            Notification.show("Najpierw zaznacz pokój.");
+            return;
+        }
+
+        Dialog dialog = new Dialog();
+        dialog.setWidth("400px");
+
+        TextField title = new TextField("Tytuł zadania");
+        TextArea description = new TextArea("Opis zadania");
+        description.setHeight("150px");
+
+        ComboBox<String> status = new ComboBox<>("Status");
+        status.setItems("W trakcie", "Wykonane");
+        status.setValue("W trakcie");
+
+        Button save = new Button("Zapisz", e -> {
+            Task task = new Task(
+                    title.getValue(),
+                    description.getValue(),
+                    status.getValue()
+            );
+
+            selectedRooms.forEach(r -> r.addTask(task));
+            roomGrid.getDataProvider().refreshAll();
+            dialog.close();
+        });
+
+        dialog.add(new VerticalLayout(title, description, status, save));
+        dialog.open();
+    }
+
+    private void openTaskInfoDialog(RoomRow room, Task task) {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("400px");
+
+        Span title = new Span("Tytuł: " + task.getTitle());
+        Span status = new Span("Status: " + task.getStatus());
+        Span desc = new Span("Opis: " + task.getDescription());
+
+        Button delete = new Button("Usuń zadanie", e -> {
+            room.removeTask(task);
+            roomGrid.getDataProvider().refreshAll();
+            dialog.close();
+        });
+
+        dialog.add(new VerticalLayout(title, status, desc, delete));
+        dialog.open();
+    }
+
+
 
     private void openAddRoomDialog() {
         Dialog dialog = new Dialog();
