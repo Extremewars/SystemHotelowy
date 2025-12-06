@@ -1,4 +1,4 @@
-package org.systemhotelowy.ui;
+package org.systemhotelowy.ui.ManagerDashboard;
 
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;

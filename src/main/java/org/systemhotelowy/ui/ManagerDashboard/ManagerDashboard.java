@@ -1,4 +1,4 @@
-package org.systemhotelowy.ui;
+package org.systemhotelowy.ui.ManagerDashboard;
 
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
@@ -30,7 +30,7 @@ public class ManagerDashboard extends VerticalLayout {
         // =========================
         //       SIATKA REZERWACJI
         // =========================
-        ReservationCalendarGrid reservationGrid = new ReservationCalendarGrid();
+        ReservationCalendar reservationGrid = new ReservationCalendar();
         add(reservationGrid);
 
         // Rozciąganie paneli

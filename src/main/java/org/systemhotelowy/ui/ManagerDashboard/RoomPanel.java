@@ -1,4 +1,4 @@
-package org.systemhotelowy.ui;
+package org.systemhotelowy.ui.ManagerDashboard;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -9,13 +9,13 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
+import org.systemhotelowy.ui.Report;
+import org.systemhotelowy.ui.Task;
 
 import java.util.*;
 
@@ -27,6 +27,28 @@ public class RoomPanel extends VerticalLayout {
 
     private HorizontalLayout selectionActions;
     private Span selectedInfo;
+    // =====================================================
+// METODA: Tworzy ładny boks / kafelek
+// =====================================================
+    private Span createBoxLabel(String text) {
+        Span box = new Span(text);
+
+        box.getStyle()
+                .set("display", "inline-block")
+                .set("padding", "6px 10px")
+                .set("border", "1px solid #ddd")
+                .set("border-radius", "8px")
+                .set("background-color", "#f4f4f4")
+                .set("cursor", "pointer")
+                .set("transition", "0.2s")
+                .set("margin-bottom", "4px");
+
+        // efekt hover
+        box.getStyle().set("box-shadow", "0 2px 5px rgba(0,0,0,0.1)");
+
+        return box;
+    }
+
 
     public RoomPanel() {
         setWidthFull();
@@ -82,13 +104,18 @@ public class RoomPanel extends VerticalLayout {
         selectionActions.setVisible(false);
         selectionActions.setSpacing(true);
 
-        // ============================
-        // GRID
-        // ============================
+
+
+// ============================
+// GRID
+// ============================
         roomGrid = new Grid<>(RoomRow.class, false);
         roomGrid.setWidthFull();
 
-        // Kolumna checkbox
+
+// -----------------------------------------------------
+// Kolumna checkbox
+// -----------------------------------------------------
         Column<RoomRow> selectCol = roomGrid.addComponentColumn(room -> {
             Checkbox box = new Checkbox();
             box.addValueChangeListener(e -> {
@@ -101,13 +128,19 @@ public class RoomPanel extends VerticalLayout {
         selectCol.setWidth("80px");
         selectCol.setFlexGrow(0);
 
-        // Pokój
+
+// -----------------------------------------------------
+// Pokój
+// -----------------------------------------------------
         Column<RoomRow> roomCol = roomGrid.addColumn(RoomRow::getRoom)
                 .setHeader("Pokój");
         roomCol.setWidth("100px");
         roomCol.setFlexGrow(0);
 
-        // Status
+
+// -----------------------------------------------------
+// Status
+// -----------------------------------------------------
         Column<RoomRow> statusCol = roomGrid.addComponentColumn(room -> {
             Span s = new Span(room.getStatus());
             switch (room.getStatus()) {
@@ -121,21 +154,30 @@ public class RoomPanel extends VerticalLayout {
         statusCol.setWidth("110px");
         statusCol.setFlexGrow(0);
 
-        // Pracownik
+
+// -----------------------------------------------------
+// Pracownik
+// -----------------------------------------------------
         Column<RoomRow> workerCol = roomGrid.addColumn(RoomRow::getWorker)
                 .setHeader("Pracownik");
         workerCol.setWidth("130px");
         workerCol.setFlexGrow(0);
 
+
+// -----------------------------------------------------
+// KAFELKI: Zadania
+// -----------------------------------------------------
         Column<RoomRow> tasksCol = roomGrid.addComponentColumn(room -> {
             VerticalLayout layout = new VerticalLayout();
             layout.setPadding(false);
             layout.setSpacing(false);
 
             for (Task task : room.getTasks()) {
-                Span taskLabel = new Span(task.getTitle() + " (" + task.getStatus() + ")");
-                taskLabel.getStyle().set("cursor", "pointer");
 
+                // ------ użycie BOXU -------
+                Span taskLabel = createBoxLabel(task.getTitle() + " (" + task.getStatus() + ")");
+
+                // kliknięcie otwiera dialog
                 taskLabel.addClickListener(e -> openTaskInfoDialog(room, task));
 
                 layout.add(taskLabel);
@@ -143,23 +185,27 @@ public class RoomPanel extends VerticalLayout {
 
             return layout;
         }).setHeader("Zadania");
+
         tasksCol.setWidth("250px");
         tasksCol.setFlexGrow(1);
 
 
-        // Zgłoszenia – szerokie
+// -----------------------------------------------------
+// KAFELKI: Zgłoszenia
+// -----------------------------------------------------
         Column<RoomRow> notesCol = roomGrid.addComponentColumn(room -> {
             VerticalLayout layout = new VerticalLayout();
             layout.setPadding(false);
             layout.setSpacing(false);
 
             for (Report rep : room.getReports()) {
-                Span repLabel = new Span(rep.getTitle() + " (" + rep.getStatus() + ")");
-                repLabel.getStyle().set("cursor", "pointer");
 
-                // Kolor statusu
+                // ------ użycie BOXU -------
+                Span repLabel = createBoxLabel(rep.getTitle() + " (" + rep.getStatus() + ")");
+
+                // kolor obramowania dla nowych zgłoszeń
                 if (rep.getStatus().equals("Nowe")) {
-                    repLabel.getStyle().set("color", "red");
+                    repLabel.getStyle().set("border", "1px solid red");
                 } else {
                     repLabel.getStyle().set("color", "gray");
                 }
@@ -175,30 +221,37 @@ public class RoomPanel extends VerticalLayout {
         notesCol.setWidth("250px");
         notesCol.setFlexGrow(1);
 
-        // Akcje – szerokie
+
+// -----------------------------------------------------
+// Akcje
+// -----------------------------------------------------
         Column<RoomRow> actionsCol = roomGrid.addComponentColumn(room -> {
             Button edit = new Button("Edytuj");
             Button delete = new Button("Usuń");
             Button fail = new Button("Awaria");
             return new HorizontalLayout(edit, delete, fail);
         }).setHeader("Akcje");
+
         actionsCol.setWidth("260px");
         actionsCol.setFlexGrow(1);
 
-        // ============================
-        // STYLE
-        // ============================
+
+// -----------------------------------------------------
+// STYLE
+// -----------------------------------------------------
         roomGrid.getStyle()
                 .set("border", "1px solid #ddd")
                 .set("border-radius", "10px")
                 .set("overflow", "hidden")
                 .set("box-shadow", "0 2px 6px rgba(0,0,0,0.1)");
+
         roomGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
         roomGrid.addThemeVariants(
                 GridVariant.LUMO_COLUMN_BORDERS,
                 GridVariant.LUMO_WRAP_CELL_CONTENT
         );
         roomGrid.getStyle().set("margin-top", "10px");
+
 
         // =========================
         // MOCKOWE DANE

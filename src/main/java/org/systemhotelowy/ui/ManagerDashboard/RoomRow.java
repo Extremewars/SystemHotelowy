@@ -1,4 +1,7 @@
-package org.systemhotelowy.ui;
+package org.systemhotelowy.ui.ManagerDashboard;
+
+import org.systemhotelowy.ui.Report;
+import org.systemhotelowy.ui.Task;
 
 import java.util.ArrayList;
 import java.util.List;
