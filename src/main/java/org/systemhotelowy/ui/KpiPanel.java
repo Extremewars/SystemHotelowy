@@ -21,6 +21,7 @@ public class KpiPanel extends VerticalLayout {
         kpiLayout.add(createKpiBox("Wolne", 10, VaadinIcon.CHECK_CIRCLE));
         kpiLayout.add(createKpiBox("Zajęte", 5, VaadinIcon.USER));
         kpiLayout.add(createKpiBox("Awaria", 1, VaadinIcon.WARNING));
+        kpiLayout.add(createKpiBox("Zgłoszenia", 1, VaadinIcon.NEWSPAPER));
 
         add(kpiLayout);
     }
