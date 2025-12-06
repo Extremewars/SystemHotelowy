@@ -76,7 +76,7 @@ public class RoomPanel extends VerticalLayout {
         }).setHeader("Status");
 
         roomGrid.addColumn(RoomRow::getRoom).setHeader("Pokój");
-        roomGrid.addColumn(RoomRow::getWorker).setHeader("Osoba");
+        roomGrid.addColumn(RoomRow::getWorker).setHeader("Pracownik");
         roomGrid.addColumn(RoomRow::getTasks).setHeader("Zadania");
         roomGrid.addColumn(RoomRow::getNotes).setHeader("Uwagi");
 
