@@ -1,23 +1,36 @@
 package org.systemhotelowy.ui;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class RoomRow {
     private String room;
     private String status;
     private String worker;
-    private String tasks;
+    private List<Task> tasks;
     private String notes;
 
-    public RoomRow(String room, String status, String worker, String tasks, String notes) {
+    public RoomRow(String room, String status, String worker, String notes, String s) {
         this.room = room;
         this.status = status;
         this.worker = worker;
-        this.tasks = tasks;
+        this.tasks = new ArrayList<>();
         this.notes = notes;
     }
+
+    private List<Report> reports = new ArrayList<>();
+
+    public List<Report> getReports() { return reports; }
+    public void addReport(Report r) { reports.add(r); }
+    public void removeReport(Report r) { reports.remove(r); }
+
 
     public String getRoom() { return room; }
     public String getStatus() { return status; }
     public String getWorker() { return worker; }
-    public String getTasks() { return tasks; }
+    public List<Task> getTasks() { return tasks; }
     public String getNotes() { return notes; }
+
+    public void addTask(Task task) { tasks.add(task); }
+    public void removeTask(Task task) { tasks.remove(task); }
 }
