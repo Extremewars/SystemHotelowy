@@ -145,17 +145,25 @@ public class RoomPanel extends VerticalLayout {
                 .setFlexGrow(0);
 
         // ============================
-        // Mockowe dane (uzupełnić o lokalizację, wyposażenie i max osób)
+        // Mockowe dane
         // ============================
         RoomRow r1 = new RoomRow("101", "Wolny", "1 piętro", "TV, Klimatyzacja", "2");
         r1.addReport(new Report("Brak ręczników", "W pokoju brakuje ręczników.", "Nowe"));
 
+
+        r1.addTask(new Task("Wymiana ręczników", "Wymienić zestaw ręczników dla nowych gości.", "W trakcie"));
+        r1.addTask(new Task("Odświeżenie łazienki", "Umyć kabinę prysznicową i uzupełnić kosmetyki.", "Wykonane"));
+
         RoomRow r2 = new RoomRow("102", "Zajęty", "1 piętro", "TV", "3");
+        r2.addTask(new Task("Zmiana pościeli", "Wymienić pościel po wyjeździe poprzednich gości.", "W trakcie"));
+
         RoomRow r3 = new RoomRow("103", "Wolny", "2 piętro", "Klimatyzacja", "2");
+        r3.addTask(new Task("Sprawdzenie klimatyzacji", "Technik ma sprawdzić działanie klimatyzacji.", "W trakcie"));
 
         rooms.add(r1);
         rooms.add(r2);
         rooms.add(r3);
+
 
         roomGrid.setItems(rooms);
 
@@ -172,15 +180,28 @@ public class RoomPanel extends VerticalLayout {
         Span title = new Span("Tytuł: " + task.getTitle());
         Span desc = new Span("Treść: " + task.getDescription());
 
-        Button markDone = new Button("Oznacz jako wykonane", e -> {
-            task.setStatus("Wykonane");
-            roomGrid.getDataProvider().refreshAll();
-            dialog.close();
-        });
+        // Tworzymy przycisk w zależności od statusu zadania
+        Button toggleStatus = new Button();
+        if ("Wykonane".equals(task.getStatus())) {
+            toggleStatus.setText("Oznacz jako niewykonane");
+            toggleStatus.addClickListener(e -> {
+                task.setStatus("W trakcie");
+                roomGrid.getDataProvider().refreshAll();
+                dialog.close();
+            });
+        } else {
+            toggleStatus.setText("Oznacz jako wykonane");
+            toggleStatus.addClickListener(e -> {
+                task.setStatus("Wykonane");
+                roomGrid.getDataProvider().refreshAll();
+                dialog.close();
+            });
+        }
 
-        dialog.add(new VerticalLayout(title, desc, markDone));
+        dialog.add(new VerticalLayout(title, desc, toggleStatus));
         dialog.open();
     }
+
 
     // =====================================================
     // DIALOG: Zgłoszenie
