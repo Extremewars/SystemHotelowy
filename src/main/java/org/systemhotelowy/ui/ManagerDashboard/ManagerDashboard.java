@@ -30,7 +30,7 @@ public class ManagerDashboard extends VerticalLayout {
         // =========================
         //       SIATKA REZERWACJI
         // =========================
-        ReservationCalendarGrid reservationGrid = new ReservationCalendarGrid();
+        ReservationCalendar reservationGrid = new ReservationCalendar();
         add(reservationGrid);
 
         // Rozciąganie paneli
