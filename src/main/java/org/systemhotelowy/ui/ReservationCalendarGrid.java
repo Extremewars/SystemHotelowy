@@ -25,7 +25,6 @@ public class ReservationCalendarGrid extends VerticalLayout {
     private LocalDate windowStart = LocalDate.now().minusDays(1);
     private final int WINDOW_SIZE = 14;
 
-    private Span monthHeader;
     private Span rangeLabel;
 
     public ReservationCalendarGrid() {
@@ -58,13 +57,10 @@ public class ReservationCalendarGrid extends VerticalLayout {
         HorizontalLayout pager = new HorizontalLayout(prevBtn, rangeLabel, nextBtn);
         pager.setAlignItems(Alignment.CENTER);
 
-        // ======= MONTH HEADER =======
-        monthHeader = buildMonthHeader();
-
         Button openFormButton = new Button("Dodaj rezerwację");
         openFormButton.addClickListener(e -> openReservationDialog(null, null));
 
-        HorizontalLayout header = new HorizontalLayout(monthHeader, pager, openFormButton);
+        HorizontalLayout header = new HorizontalLayout(pager, openFormButton);
         header.setWidthFull();
         header.setJustifyContentMode(JustifyContentMode.BETWEEN);
 
@@ -194,29 +190,18 @@ public class ReservationCalendarGrid extends VerticalLayout {
     }
 
     // ------------------------------------------------------------------------
-    // MONTH HEADER
+    // DATE RANGE FORMATTER
     // ------------------------------------------------------------------------
-
-    private Span buildMonthHeader() {
-        LocalDate start = windowStart;
-        LocalDate end = windowStart.plusDays(WINDOW_SIZE - 1);
-        Locale pl = Locale.forLanguageTag("pl");
-
-        String startMonth = start.getMonth().getDisplayName(TextStyle.FULL, pl) + " " + start.getYear();
-        String endMonth = end.getMonth().getDisplayName(TextStyle.FULL, pl) + " " + end.getYear();
-
-        Span s = new Span("[" + startMonth + "] – [" + endMonth + "]");
-        s.getStyle().set("font-weight", "600").set("font-size", "16px");
-        return s;
-    }
 
     private String formatRange(LocalDate start, LocalDate end) {
         Locale pl = Locale.forLanguageTag("pl");
         return start.getDayOfMonth() + " " +
                 start.getMonth().getDisplayName(TextStyle.FULL, pl) +
+                " " + start.getYear() +
                 " – " +
                 end.getDayOfMonth() + " " +
-                end.getMonth().getDisplayName(TextStyle.FULL, pl);
+                end.getMonth().getDisplayName(TextStyle.FULL, pl) +
+                " " + end.getYear();
     }
 
     // ------------------------------------------------------------------------
@@ -263,15 +248,6 @@ public class ReservationCalendarGrid extends VerticalLayout {
             rows.add(new ReservationRow(r.getName(), r.getMaxPeople(), r.getPrice(), null, null, null, null));
 
         reservationGrid.setItems(rows);
-
-        // ---- Update month header ----
-        monthHeader.setText(
-                "[" + windowStart.getMonth().getDisplayName(TextStyle.FULL, Locale.forLanguageTag("pl"))
-                        + " " + windowStart.getYear() + "] – [" +
-                        windowStart.plusDays(WINDOW_SIZE - 1).getMonth()
-                                .getDisplayName(TextStyle.FULL, Locale.forLanguageTag("pl"))
-                        + " " + windowStart.plusDays(WINDOW_SIZE - 1).getYear() + "]"
-        );
 
         // ---- Update range label ----
         LocalDate start = windowStart;
