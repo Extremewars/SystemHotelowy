@@ -6,6 +6,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -23,7 +24,6 @@ public class RoomPanel extends VerticalLayout {
     private List<RoomRow> rooms = new ArrayList<>();
     private Set<RoomRow> selectedRooms = new HashSet<>();
 
-    // Panel akcji dla zaznaczonych pokoi
     private HorizontalLayout selectionActions;
     private Span selectedInfo;
 
@@ -31,23 +31,28 @@ public class RoomPanel extends VerticalLayout {
         setWidthFull();
         setSpacing(true);
 
+        // ============================
+        // FILTRY
+        // ============================
         ComboBox<String> statusFilter = new ComboBox<>("Status");
         statusFilter.setItems("Wolny", "Zajęty", "Awaria");
 
         ComboBox<String> workerFilter = new ComboBox<>("Pracownik");
         workerFilter.setItems("Anna", "Jan", "Maria", "Brak przypisania");
 
-        HorizontalLayout filters = new HorizontalLayout(statusFilter, workerFilter);
-        filters.setWidthFull();
-        filters.setSpacing(true);
-
+        // Przycisk
         Button addRoomBtn = new Button("Dodaj pokój", e -> openAddRoomDialog());
 
-        HorizontalLayout buttons = new HorizontalLayout(addRoomBtn);
-        buttons.setSpacing(true);
+        // Jedna linia: filtry po lewej, przycisk po prawej
+        Span spacer = new Span();
+        spacer.getStyle().set("flex-grow", "1");
+
+        HorizontalLayout topBar = new HorizontalLayout(statusFilter, workerFilter, spacer, addRoomBtn);
+        topBar.setWidthFull();
+        topBar.setAlignItems(Alignment.END);
 
         // ============================
-        //  PANEL DLA ZAZNACZONYCH POKOI
+        // PANEL ZAZNACZONYCH
         // ============================
         Button addTaskBtn = new Button("Dodaj zadanie");
         Button addNoteBtn = new Button("Dodaj uwagę");
@@ -59,30 +64,32 @@ public class RoomPanel extends VerticalLayout {
         selectionActions.setSpacing(true);
 
         // ============================
-        //         GRID
+        // GRID
         // ============================
         roomGrid = new Grid<>(RoomRow.class, false);
         roomGrid.setWidthFull();
 
-        // Checkbox column
-        roomGrid.addComponentColumn(room -> {
+        // Kolumna checkbox
+        Column<RoomRow> selectCol = roomGrid.addComponentColumn(room -> {
             Checkbox box = new Checkbox();
             box.addValueChangeListener(e -> {
-                if (e.getValue()) {
-                    selectedRooms.add(room);
-                } else {
-                    selectedRooms.remove(room);
-                }
+                if (e.getValue()) selectedRooms.add(room);
+                else selectedRooms.remove(room);
                 updateSelectionActions();
             });
             return box;
-        }).setHeader("Select").setAutoWidth(true);
+        }).setHeader("Select");
+        selectCol.setWidth("80px");
+        selectCol.setFlexGrow(0);
 
-        // Room column
-        roomGrid.addColumn(RoomRow::getRoom).setHeader("Pokój");
+        // Pokój
+        Column<RoomRow> roomCol = roomGrid.addColumn(RoomRow::getRoom)
+                .setHeader("Pokój");
+        roomCol.setWidth("100px");
+        roomCol.setFlexGrow(0);
 
-        // Icon-based status
-        roomGrid.addComponentColumn(room -> {
+        // Status
+        Column<RoomRow> statusCol = roomGrid.addComponentColumn(room -> {
             Icon icon;
             switch (room.getStatus()) {
                 case "Wolny":
@@ -103,18 +110,36 @@ public class RoomPanel extends VerticalLayout {
             }
             return icon;
         }).setHeader("Status");
+        statusCol.setWidth("110px");
+        statusCol.setFlexGrow(0);
 
-        roomGrid.addColumn(RoomRow::getWorker).setHeader("Pracownik");
-        roomGrid.addColumn(RoomRow::getTasks).setHeader("Zadania");
-        roomGrid.addColumn(RoomRow::getNotes).setHeader("Uwagi");
+        // Pracownik
+        Column<RoomRow> workerCol = roomGrid.addColumn(RoomRow::getWorker)
+                .setHeader("Pracownik");
+        workerCol.setWidth("130px");
+        workerCol.setFlexGrow(0);
 
-        // Action buttons
-        roomGrid.addComponentColumn(room -> {
-            Button edit = new Button("Edytuj", e -> Notification.show("Edytuj " + room.getRoom()));
-            Button delete = new Button("Usuń", e -> Notification.show("Usuń " + room.getRoom()));
-            Button fail = new Button("Awaria", e -> Notification.show("Zgłoszono awarię w pokoju " + room.getRoom()));
+        // Zadania – szerokie
+        Column<RoomRow> tasksCol = roomGrid.addColumn(RoomRow::getTasks)
+                .setHeader("Zadania");
+        tasksCol.setWidth("250px");
+        tasksCol.setFlexGrow(1);
+
+        // Uwagi – szerokie
+        Column<RoomRow> notesCol = roomGrid.addColumn(RoomRow::getNotes)
+                .setHeader("Uwagi");
+        notesCol.setWidth("250px");
+        notesCol.setFlexGrow(1);
+
+        // Akcje – szerokie
+        Column<RoomRow> actionsCol = roomGrid.addComponentColumn(room -> {
+            Button edit = new Button("Edytuj");
+            Button delete = new Button("Usuń");
+            Button fail = new Button("Awaria");
             return new HorizontalLayout(edit, delete, fail);
         }).setHeader("Akcje");
+        actionsCol.setWidth("260px");
+        actionsCol.setFlexGrow(1);
 
         roomGrid.setItems(
                 new RoomRow("101", "Wolny", "Anna", "-", ""),
@@ -123,7 +148,7 @@ public class RoomPanel extends VerticalLayout {
                 new RoomRow("104", "Awaria", "Brak", "-", "Zepsuta klimatyzacja")
         );
 
-        add(filters, buttons, selectionActions, roomGrid);
+        add(topBar, selectionActions, roomGrid);
     }
 
     private void updateSelectionActions() {
@@ -132,9 +157,6 @@ public class RoomPanel extends VerticalLayout {
         selectionActions.setVisible(count > 0);
     }
 
-    // ============================
-    //     DIALOG "DODAJ POKÓJ"
-    // ============================
     private void openAddRoomDialog() {
         Dialog dialog = new Dialog();
         dialog.setWidth("500px");
@@ -173,28 +195,5 @@ public class RoomPanel extends VerticalLayout {
         dialog.open();
     }
 
-    // ============================
-    //     MODEL POKOJU
-    // ============================
-    public static class RoomRow {
-        private String room;
-        private String status;
-        private String worker;
-        private String tasks;
-        private String notes;
 
-        public RoomRow(String room, String status, String worker, String tasks, String notes) {
-            this.room = room;
-            this.status = status;
-            this.worker = worker;
-            this.tasks = tasks;
-            this.notes = notes;
-        }
-
-        public String getRoom() { return room; }
-        public String getStatus() { return status; }
-        public String getWorker() { return worker; }
-        public String getTasks() { return tasks; }
-        public String getNotes() { return notes; }
-    }
 }
