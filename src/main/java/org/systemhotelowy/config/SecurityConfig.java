@@ -44,11 +44,6 @@ public class SecurityConfig {
         return authConfig.getAuthenticationManager();
     }
 
-    /**
-     * SecurityFilterChain dla REST API - używa JWT i jest stateless.
-     * Stosuje się TYLKO do endpointów /api/**, /auth/**, swagger.
-     * Pozostałe ścieżki (/, /login, /manager, /employee) obsługuje VaadinSecurityConfig.
-     */
     @Bean
     @Order(1)
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {

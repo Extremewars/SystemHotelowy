@@ -22,41 +22,34 @@ public class VaadinSecurityHelper {
      * Wylogowuje użytkownika i przekierowuje do strony logowania.
      */
     public void logout() {
-        UI.getCurrent().getPage().setLocation("/login");
+        // Najpierw wyloguj, potem przekieruj
         SecurityContextLogoutHandler logoutHandler = new SecurityContextLogoutHandler();
         logoutHandler.logout(
                 VaadinServletRequest.getCurrent().getHttpServletRequest(), null, null);
+        
+        // Przekierowanie po wylogowaniu
+        UI.getCurrent().getPage().setLocation("/login");
     }
 
     /**
      * Przekierowuje do odpowiedniego dashboardu na podstawie roli użytkownika.
+     * Jeśli użytkownik nie jest zalogowany, przekierowuje do strony logowania.
      */
     public void navigateToDashboard() {
+        UI ui = UI.getCurrent();
+        if (ui == null) {
+            return;
+        }
+        
         authService.getUserRole().ifPresentOrElse(
                 role -> {
                     switch (role) {
-                        case MANAGER, ADMIN -> {
-                            if (UI.getCurrent() != null) {
-                                UI.getCurrent().navigate("manager");
-                            }
-                        }
-                        case CLEANER -> {
-                            if (UI.getCurrent() != null) {
-                                UI.getCurrent().navigate("employee");
-                            }
-                        }
-                        default -> {
-                            if (UI.getCurrent() != null) {
-                                UI.getCurrent().navigate("login");
-                            }
-                        }
+                        case MANAGER, ADMIN -> ui.navigate("manager");
+                        case CLEANER -> ui.navigate("employee");
+                        default -> ui.navigate("login");
                     }
                 },
-                () -> {
-                    if (UI.getCurrent() != null) {
-                        UI.getCurrent().navigate("login");
-                    }
-                }
+                () -> ui.navigate("login")
         );
     }
 }

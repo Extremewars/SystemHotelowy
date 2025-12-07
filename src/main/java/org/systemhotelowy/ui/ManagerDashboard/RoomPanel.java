@@ -233,6 +233,13 @@ public class RoomPanel extends VerticalLayout {
     // METODY POMOCNICZE
     // =====================================================
     
+    /**
+     * Publiczna metoda do odświeżania danych z bazy - używana przez automatyczne odświeżanie.
+     */
+    public void refreshData() {
+        loadRoomsFromDatabase();
+    }
+    
     private void loadRoomsFromDatabase() {
         rooms = roomService.findAll();
         roomGrid.setItems(rooms);

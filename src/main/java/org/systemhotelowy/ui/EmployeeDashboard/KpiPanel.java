@@ -1,5 +1,7 @@
 package org.systemhotelowy.ui.EmployeeDashboard;
 
+import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -13,14 +15,29 @@ import org.systemhotelowy.service.RoomService;
 import org.systemhotelowy.service.TaskService;
 import org.systemhotelowy.service.VaadinAuthenticationService;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
 /**
  * Panel KPI dla pracownika - statystyki zadań i pokoi.
+ * Automatycznie odświeża się co 5 sekund.
  */
 public class KpiPanel extends VerticalLayout {
 
     private final RoomService roomService;
     private final TaskService taskService;
     private final VaadinAuthenticationService authService;
+    
+    private HorizontalLayout kpiLayout;
+    private Span readyValue;
+    private Span dirtyValue;
+    private Span myTasksValue;
+    private Span pendingTasksValue;
+    
+    private ScheduledExecutorService scheduler;
+    private ScheduledFuture<?> refreshTask;
 
     public KpiPanel(RoomService roomService, TaskService taskService, VaadinAuthenticationService authService) {
         this.roomService = roomService;
@@ -31,13 +48,47 @@ public class KpiPanel extends VerticalLayout {
         setPadding(false);
         setMargin(false);
 
-        HorizontalLayout kpiLayout = new HorizontalLayout();
+        kpiLayout = new HorizontalLayout();
         kpiLayout.setWidthFull();
         kpiLayout.setSpacing(true);
 
-        // Statystyki dla zalogowanego pracownika
-        User currentUser = authService.getAuthenticatedUser().orElse(null);
+        kpiLayout.add(createKpiBox("Gotowe pokoje", VaadinIcon.CHECK_CIRCLE, value -> readyValue = value));
+        kpiLayout.add(createKpiBox("Do sprzątania", VaadinIcon.TRASH, value -> dirtyValue = value));
+        kpiLayout.add(createKpiBox("Moje zadania", VaadinIcon.TASKS, value -> myTasksValue = value));
+        kpiLayout.add(createKpiBox("Do wykonania", VaadinIcon.CLOCK, value -> pendingTasksValue = value));
+
+        add(kpiLayout);
         
+        // Początkowe załadowanie danych
+        refreshData();
+    }
+    
+    @Override
+    protected void onAttach(AttachEvent attachEvent) {
+        super.onAttach(attachEvent);
+        
+        // Uruchom automatyczne odświeżanie co 5 sekund
+        scheduler = Executors.newScheduledThreadPool(1);
+        refreshTask = scheduler.scheduleAtFixedRate(() -> {
+            attachEvent.getUI().access(this::refreshData);
+        }, 5, 5, TimeUnit.SECONDS);
+    }
+    
+    @Override
+    protected void onDetach(DetachEvent detachEvent) {
+        super.onDetach(detachEvent);
+        
+        // Zatrzymaj odświeżanie gdy komponent jest odłączony
+        if (refreshTask != null) {
+            refreshTask.cancel(true);
+        }
+        if (scheduler != null) {
+            scheduler.shutdown();
+        }
+    }
+    
+    private void refreshData() {
+        // Pobierz aktualne dane z bazy
         long readyRooms = roomService.findAll().stream()
                 .filter(room -> room.getRoomStatus() == RoomStatus.READY)
                 .count();
@@ -45,6 +96,8 @@ public class KpiPanel extends VerticalLayout {
                 .filter(room -> room.getRoomStatus() == RoomStatus.DIRTY)
                 .count();
         
+        // Statystyki dla zalogowanego pracownika
+        User currentUser = authService.getAuthenticatedUser().orElse(null);
         long myTasks = 0;
         long myPendingTasks = 0;
         if (currentUser != null) {
@@ -53,16 +106,15 @@ public class KpiPanel extends VerticalLayout {
                     .filter(task -> task.getStatus() == TaskStatus.PENDING || task.getStatus() == TaskStatus.IN_PROGRESS)
                     .count();
         }
-
-        kpiLayout.add(createKpiBox("Gotowe pokoje", (int) readyRooms, VaadinIcon.CHECK_CIRCLE));
-        kpiLayout.add(createKpiBox("Do sprzątania", (int) dirtyRooms, VaadinIcon.TRASH));
-        kpiLayout.add(createKpiBox("Moje zadania", (int) myTasks, VaadinIcon.TASKS));
-        kpiLayout.add(createKpiBox("Do wykonania", (int) myPendingTasks, VaadinIcon.CLOCK));
-
-        add(kpiLayout);
+        
+        // Zaktualizuj wartości
+        if (readyValue != null) readyValue.setText(String.valueOf(readyRooms));
+        if (dirtyValue != null) dirtyValue.setText(String.valueOf(dirtyRooms));
+        if (myTasksValue != null) myTasksValue.setText(String.valueOf(myTasks));
+        if (pendingTasksValue != null) pendingTasksValue.setText(String.valueOf(myPendingTasks));
     }
 
-    private Div createKpiBox(String title, int value, VaadinIcon iconType) {
+    private Div createKpiBox(String title, VaadinIcon iconType, java.util.function.Consumer<Span> valueConsumer) {
         Div box = new Div();
         box.getStyle().set("border", "1px solid #ccc");
         box.getStyle().set("padding", "10px");
@@ -75,8 +127,12 @@ public class KpiPanel extends VerticalLayout {
 
         Span t = new Span(title);
         t.getStyle().set("display", "block");
-        Span v = new Span(String.valueOf(value));
+        Span v = new Span("0");
         v.getStyle().set("font-weight", "bold");
+        v.getStyle().set("font-size", "24px");
+        
+        // Przekaż referencję do Span wartości
+        valueConsumer.accept(v);
 
         box.add(icon, t, v);
         return box;
