@@ -17,16 +17,13 @@ public class VaadinSecurityConfig extends VaadinWebSecurity {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        // Konfiguracja standardowa dla Vaadin (CSRF, session management, etc.)
         super.configure(http);
         
-        // Ustawienie strony logowania
         setLoginView(http, LoginView.class);
     }
 
     @Override
     public void configure(WebSecurity web) throws Exception {
-        // Ignoruj Swagger UI (może być dostępny przez przeglądarkę bez autentykacji)
         web.ignoring().requestMatchers(
                 "/swagger-ui.html",
                 "/swagger-ui/**",
@@ -35,7 +32,6 @@ public class VaadinSecurityConfig extends VaadinWebSecurity {
                 "/webjars/**"
         );
         
-        // Wywołaj standardową konfigurację Vaadin (ignoruje zasoby statyczne)
         super.configure(web);
     }
 }

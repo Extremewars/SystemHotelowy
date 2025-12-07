@@ -32,6 +32,6 @@ public class MainView extends VerticalLayout implements BeforeEnterObserver {
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         // Automatyczne przekierowanie do dashboardu lub logowania
-        securityHelper.navigateToDashboard();
+        securityHelper.navigateToDashboard(event);
     }
 }
