@@ -11,9 +11,11 @@ import java.util.List;
 
 public interface TaskRepository extends JpaRepository<Task, Integer> {
 
-    List<Task> findByRoomId(Integer roomId);
+    @Query("SELECT t FROM Task t LEFT JOIN FETCH t.room LEFT JOIN FETCH t.assignedTo WHERE t.room.id = :roomId")
+    List<Task> findByRoomId(@Param("roomId") Integer roomId);
 
-    List<Task> findByAssignedToId(Integer userId);
+    @Query("SELECT t FROM Task t LEFT JOIN FETCH t.room LEFT JOIN FETCH t.assignedTo WHERE t.assignedTo.id = :userId")
+    List<Task> findByAssignedToId(@Param("userId") Integer userId);
 
     @Query("SELECT t FROM Task t WHERE t.room.id = :roomId AND DATE(t.scheduledAt) = :date")
     List<Task> findByRoomIdAndDate(@Param("roomId") Integer roomId, @Param("date") LocalDate date);

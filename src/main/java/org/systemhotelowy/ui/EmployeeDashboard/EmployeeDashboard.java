@@ -3,17 +3,37 @@ package org.systemhotelowy.ui.EmployeeDashboard;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import org.systemhotelowy.ui.EmployeeDashboard.KpiPanel;
-import org.systemhotelowy.ui.EmployeeDashboard.RoomPanel;
-import org.systemhotelowy.ui.EmployeeDashboard.TopBar;
+import jakarta.annotation.security.RolesAllowed;
+import org.systemhotelowy.service.RoomService;
+import org.systemhotelowy.service.TaskService;
+import org.systemhotelowy.service.VaadinAuthenticationService;
+import org.systemhotelowy.ui.components.DashboardTopBar;
+import org.systemhotelowy.utils.VaadinSecurityHelper;
 
-
-
+/**
+ * Dashboard dla Pracownika - dostępny tylko dla użytkowników z rolą CLEANER.
+ */
 @Route("employee")
 @PageTitle("Panel Pracownika")
+@RolesAllowed("CLEANER")
 public class EmployeeDashboard extends VerticalLayout {
 
-    public EmployeeDashboard() {
+    private final VaadinAuthenticationService authService;
+    private final VaadinSecurityHelper securityHelper;
+    private final RoomService roomService;
+    private final TaskService taskService;
+
+    public EmployeeDashboard(
+            VaadinAuthenticationService authService,
+            VaadinSecurityHelper securityHelper,
+            RoomService roomService,
+            TaskService taskService
+    ) {
+        this.authService = authService;
+        this.securityHelper = securityHelper;
+        this.roomService = roomService;
+        this.taskService = taskService;
+        
         setSizeFull();
         setPadding(true);
         setSpacing(true);
@@ -21,24 +41,20 @@ public class EmployeeDashboard extends VerticalLayout {
         // =========================
         //       GÓRNY PASEK + KPI
         // =========================
-        org.systemhotelowy.ui.EmployeeDashboard.TopBar topBar = new TopBar();
-        org.systemhotelowy.ui.EmployeeDashboard.KpiPanel kpiPanel = new KpiPanel();
+        DashboardTopBar topBar = new DashboardTopBar("Panel Pracownika", authService, securityHelper);
+        KpiPanel kpiPanel = new KpiPanel(roomService, taskService, authService);
 
         add(topBar, kpiPanel);
 
         // =========================
-        //       PANEL POKOI
+        //       PANEL ZADAŃ
         // =========================
-        RoomPanel roomPanel = new RoomPanel();
-        add(roomPanel);
-
-        // =========================
-        //       SIATKA REZERWACJI
-        // =========================
+        TaskPanel taskPanel = new TaskPanel(taskService, authService);
+        add(taskPanel);
 
         // Rozciąganie paneli
         setFlexGrow(0, topBar);       // top bar nie rośnie
         setFlexGrow(0, kpiPanel);     // KPI nie rośnie
-        setFlexGrow(1, roomPanel);    // roomPanel rośnie
+        setFlexGrow(1, taskPanel);    // taskPanel rośnie
     }
 }

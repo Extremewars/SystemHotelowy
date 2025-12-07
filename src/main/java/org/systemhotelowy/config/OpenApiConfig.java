@@ -23,7 +23,7 @@ public class OpenApiConfig {
                         .description("REST API dla systemu hotelowego - zarządzanie pokojami, zadaniami i użytkownikami")
                         .contact(new Contact()
                                 .name("System Hotelowy")
-                                .email("admin@local")))
+                                .email("admin@local.com")))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
                 .components(new Components()
                         .addSecuritySchemes(securitySchemeName,

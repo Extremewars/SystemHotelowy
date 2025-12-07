@@ -15,4 +15,5 @@ public class RoomResponse {
     private Integer floor;
     private RoomType type;
     private RoomStatus roomStatus;
+    private Integer capacity;
 }

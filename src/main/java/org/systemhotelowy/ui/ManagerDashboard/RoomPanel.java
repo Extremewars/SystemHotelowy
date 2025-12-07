@@ -1,7 +1,6 @@
 package org.systemhotelowy.ui.ManagerDashboard;
 
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -10,22 +9,37 @@ import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
-import org.systemhotelowy.ui.Report;
-import org.systemhotelowy.ui.Task;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
+import org.systemhotelowy.dto.RoomRequest;
+import org.systemhotelowy.dto.TaskRequest;
+import org.systemhotelowy.mapper.RoomMapper;
+import org.systemhotelowy.model.*;
+import org.systemhotelowy.service.RoomService;
+import org.systemhotelowy.service.TaskService;
+import org.systemhotelowy.service.UserService;
 
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
+/**
+ * Panel zarządzania pokojami z prawdziwymi danymi z bazy.
+ */
 public class RoomPanel extends VerticalLayout {
 
-    private Grid<RoomRow> roomGrid;
-    private List<RoomRow> rooms = new ArrayList<>();
-    private Set<RoomRow> selectedRooms = new HashSet<>();
-
-    private HorizontalLayout selectionActions;
+    private final RoomService roomService;
+    private final TaskService taskService;
+    private final UserService userService;
+    
+    private Grid<Room> roomGrid;
+    private List<Room> rooms = new ArrayList<>();
+    
     private Span selectedInfo;
     // =====================================================
 // METODA: Tworzy ładny boks / kafelek
@@ -50,190 +64,147 @@ public class RoomPanel extends VerticalLayout {
     }
 
 
-    public RoomPanel() {
+    public RoomPanel(RoomService roomService, TaskService taskService, UserService userService) {
+        this.roomService = roomService;
+        this.taskService = taskService;
+        this.userService = userService;
+        
         setWidthFull();
         setSpacing(true);
 
         // ============================
         // FILTRY
         // ============================
-        ComboBox<String> statusFilter = new ComboBox<>("Status");
-        statusFilter.setItems("Wolny", "Zajęty", "Awaria");
+        ComboBox<RoomStatus> statusFilter = new ComboBox<>("Status");
+        statusFilter.setItems(RoomStatus.values());
+        statusFilter.setItemLabelGenerator(status -> {
+            switch (status) {
+                case READY: return "Gotowy";
+                case DIRTY: return "Brudny";
+                case CLEANING: return "Sprzątanie";
+                case IN_MAINTENANCE: return "Konserwacja";
+                case OUT_OF_ORDER: return "Awaria";
+                default: return status.name();
+            }
+        });
+        statusFilter.addValueChangeListener(e -> filterRooms(statusFilter.getValue(), null));
 
-        ComboBox<String> workerFilter = new ComboBox<>("Pracownik");
-        workerFilter.setItems("Anna", "Jan", "Maria", "Brak przypisania");
         TextField searchField = new TextField("Szukaj pokoju");
         searchField.setPlaceholder("np. 101");
         searchField.setClearButtonVisible(true);
+        searchField.addValueChangeListener(e -> filterRooms(statusFilter.getValue(), e.getValue()));
 
-        searchField.addValueChangeListener(e -> {
-            String value = e.getValue().trim();
-            roomGrid.setItems(rooms.stream()
-                    .filter(r -> r.getRoom().contains(value))
-                    .toList());
+        Button refreshBtn = new Button("Odśwież", e -> {
+            loadRoomsFromDatabase();
+            Notification.show("Dane odświeżone", 2000, Notification.Position.BOTTOM_START);
         });
-
 
         // Przycisk
         Button addRoomBtn = new Button("Dodaj pokój", e -> openAddRoomDialog());
 
-        // Jedna linia: filtry po lewej, przycisk po prawej
+        // Jedna linia: filtry po lewej, przyciski po prawej
         Span spacer = new Span();
         spacer.getStyle().set("flex-grow", "1");
 
         HorizontalLayout topBar = new HorizontalLayout(
                 statusFilter,
-                workerFilter,
                 searchField,
                 spacer,
+                refreshBtn,
                 addRoomBtn
         );
 
         topBar.setWidthFull();
         topBar.setAlignItems(Alignment.END);
 
+
         // ============================
-        // PANEL ZAZNACZONYCH
+        // GRID
         // ============================
-        Button addTaskBtn = new Button("Dodaj zadanie", e -> openAddTaskDialog());
-
-
-        selectedInfo = new Span("Zaznaczono: 0");
-
-        selectionActions = new HorizontalLayout(selectedInfo, addTaskBtn);
-        selectionActions.setVisible(false);
-        selectionActions.setSpacing(true);
-
-
-
-// ============================
-// GRID
-// ============================
-        roomGrid = new Grid<>(RoomRow.class, false);
+        roomGrid = new Grid<>(Room.class, false);
         roomGrid.setWidthFull();
 
+        // Kolumna Numer pokoju
+        roomGrid.addColumn(Room::getNumber)
+                .setHeader("Numer")
+                .setWidth("100px")
+                .setFlexGrow(0)
+                .setSortable(true);
 
-// -----------------------------------------------------
-// Kolumna checkbox
-// -----------------------------------------------------
-        Column<RoomRow> selectCol = roomGrid.addComponentColumn(room -> {
-            Checkbox box = new Checkbox();
-            box.addValueChangeListener(e -> {
-                if (e.getValue()) selectedRooms.add(room);
-                else selectedRooms.remove(room);
-                updateSelectionActions();
-            });
-            return box;
-        }).setHeader("Select");
-        selectCol.setWidth("80px");
-        selectCol.setFlexGrow(0);
+        // Kolumna Piętro
+        roomGrid.addColumn(room -> room.getFloor() != null ? room.getFloor().toString() : "-")
+                .setHeader("Piętro")
+                .setWidth("80px")
+                .setFlexGrow(0);
 
+        // Kolumna Typ
+        roomGrid.addColumn(room -> formatRoomType(room.getType()))
+                .setHeader("Typ")
+                .setWidth("120px")
+                .setFlexGrow(0);
 
-// -----------------------------------------------------
-// Pokój
-// -----------------------------------------------------
-        Column<RoomRow> roomCol = roomGrid.addColumn(RoomRow::getRoom)
-                .setHeader("Pokój");
-        roomCol.setWidth("100px");
-        roomCol.setFlexGrow(0);
-
-
-// -----------------------------------------------------
-// Status
-// -----------------------------------------------------
-        Column<RoomRow> statusCol = roomGrid.addComponentColumn(room -> {
-            Span s = new Span(room.getStatus());
-            switch (room.getStatus()) {
-                case "Wolny" -> s.getStyle().set("color", "green");
-                case "Zajęty" -> s.getStyle().set("color", "blue");
-                case "Awaria" -> s.getStyle().set("color", "red");
+        // Kolumna Status z kolorami
+        roomGrid.addComponentColumn(room -> {
+            Span s = new Span(formatRoomStatus(room.getRoomStatus()));
+            s.getStyle().set("padding", "4px 8px")
+                    .set("border-radius", "4px")
+                    .set("font-weight", "500");
+            
+            switch (room.getRoomStatus()) {
+                case READY -> s.getStyle().set("background-color", "#d4edda").set("color", "#155724");
+                case DIRTY -> s.getStyle().set("background-color", "#fff3cd").set("color", "#856404");
+                case CLEANING -> s.getStyle().set("background-color", "#cce5ff").set("color", "#004085");
+                case OUT_OF_ORDER, IN_MAINTENANCE -> s.getStyle().set("background-color", "#f8d7da").set("color", "#721c24");
             }
             return s;
-        }).setHeader("Status");
+        }).setHeader("Status")
+                .setWidth("140px")
+                .setFlexGrow(0);
 
-        statusCol.setWidth("110px");
-        statusCol.setFlexGrow(0);
-
-
-// -----------------------------------------------------
-// Pracownik
-// -----------------------------------------------------
-        Column<RoomRow> workerCol = roomGrid.addColumn(RoomRow::getWorker)
-                .setHeader("Pracownik");
-        workerCol.setWidth("130px");
-        workerCol.setFlexGrow(0);
-
-
-// -----------------------------------------------------
-// KAFELKI: Zadania
-// -----------------------------------------------------
-        Column<RoomRow> tasksCol = roomGrid.addComponentColumn(room -> {
+        // Kolumna Zadania
+        roomGrid.addComponentColumn(room -> {
+            List<org.systemhotelowy.model.Task> tasks = taskService.findByRoomId(room.getId());
             VerticalLayout layout = new VerticalLayout();
             layout.setPadding(false);
             layout.setSpacing(false);
 
-            for (Task task : room.getTasks()) {
-
-                // ------ użycie BOXU -------
-                Span taskLabel = createBoxLabel(task.getTitle() + " (" + task.getStatus() + ")");
-
-                // kliknięcie otwiera dialog
-                taskLabel.addClickListener(e -> openTaskInfoDialog(room, task));
-
-                layout.add(taskLabel);
+            if (tasks.isEmpty()) {
+                layout.add(new Span("-"));
+            } else {
+                tasks.forEach(task -> {
+                    Span taskLabel = createBoxLabel(
+                        task.getDescription().length() > 30 
+                            ? task.getDescription().substring(0, 30) + "..." 
+                            : task.getDescription()
+                    );
+                    taskLabel.addClickListener(e -> openTaskDetailsDialog(task));
+                    layout.add(taskLabel);
+                });
             }
-
             return layout;
-        }).setHeader("Zadania");
+        }).setHeader("Zadania")
+                .setWidth("200px")
+                .setFlexGrow(1);
 
-        tasksCol.setWidth("250px");
-        tasksCol.setFlexGrow(1);
-
-
-// -----------------------------------------------------
-// KAFELKI: Zgłoszenia
-// -----------------------------------------------------
-        Column<RoomRow> notesCol = roomGrid.addComponentColumn(room -> {
-            VerticalLayout layout = new VerticalLayout();
-            layout.setPadding(false);
-            layout.setSpacing(false);
-
-            for (Report rep : room.getReports()) {
-
-                // ------ użycie BOXU -------
-                Span repLabel = createBoxLabel(rep.getTitle() + " (" + rep.getStatus() + ")");
-
-                // kolor obramowania dla nowych zgłoszeń
-                if (rep.getStatus().equals("Nowe")) {
-                    repLabel.getStyle().set("border", "1px solid red");
-                } else {
-                    repLabel.getStyle().set("color", "gray");
-                }
-
-                repLabel.addClickListener(e -> openReportDialog(room, rep));
-
-                layout.add(repLabel);
-            }
-
-            return layout;
-        }).setHeader("Zgłoszenia");
-
-        notesCol.setWidth("250px");
-        notesCol.setFlexGrow(1);
-
-
-// -----------------------------------------------------
-// Akcje
-// -----------------------------------------------------
-        Column<RoomRow> actionsCol = roomGrid.addComponentColumn(room -> {
-            Button edit = new Button("Edytuj");
-            Button delete = new Button("Usuń");
-            Button fail = new Button("Awaria");
-            return new HorizontalLayout(edit, delete, fail);
-        }).setHeader("Akcje");
-
-        actionsCol.setWidth("260px");
-        actionsCol.setFlexGrow(1);
+        // Kolumna Akcje
+        roomGrid.addComponentColumn(room -> {
+            Button editBtn = new Button("Edytuj", e -> openEditRoomDialog(room));
+            editBtn.setTooltipText("Edytuj pokój");
+            
+            Button statusBtn = new Button("Status", e -> openChangeStatusDialog(room));
+            statusBtn.setTooltipText("Zmień status");
+            
+            Button deleteBtn = new Button("Usuń", e -> deleteRoom(room));
+            deleteBtn.setTooltipText("Usuń pokój");
+            deleteBtn.getStyle().set("color", "red");
+            
+            Button taskBtn = new Button("+ Zadanie", e -> openAddTaskForRoomDialog(room));
+            taskBtn.setTooltipText("Dodaj zadanie");
+            
+            return new HorizontalLayout(editBtn, statusBtn, taskBtn, deleteBtn);
+        }).setHeader("Akcje")
+                .setWidth("350px")
+                .setFlexGrow(1);
 
 
 // -----------------------------------------------------
@@ -252,114 +223,97 @@ public class RoomPanel extends VerticalLayout {
         );
         roomGrid.getStyle().set("margin-top", "10px");
 
-
-        // =========================
-        // MOCKOWE DANE
-        // =========================
-
-        RoomRow r1 = new RoomRow("101", "Wolny", "Anna", "-", "");
-        r1.addReport(new Report("Brak ręczników", "W pokoju 101 brakuje ręczników.", "Nowe"));
-        r1.addReport(new Report("Uszkodzona żarówka", "Przepaliła się żarówka nad łóżkiem.", "Przeczytane"));
-
-        RoomRow r2 = new RoomRow("102", "Zajęty", "Jan", "-", "");
-        RoomRow r3 = new RoomRow("103", "Wolny", "Maria", "-", "");
-        RoomRow r4 = new RoomRow("104", "Awaria", "Brak", "-", "");
-        r4.addReport(new Report("Klimatyzacja nie działa", "Gość zgłosił brak chłodzenia.", "Nowe"));
-
-
-
-    // Pokój 101
-        r1.addTask(new Task(
-                "Wymiana ręczników",
-                "Wymienić zestaw ręczników dla nowych gości.",
-                "W trakcie"
-        ));
-
-        r1.addTask(new Task(
-                "Odświeżenie łazienki",
-                "Umyć kabinę prysznicową i uzupełnić kosmetyki.",
-                "Wykonane"
-        ));
-
-    // Pokój 102
-        r2.addTask(new Task(
-                "Zmiana pościeli",
-                "Wymienić pościel po wyjeździe poprzednich gości.",
-                "W trakcie"
-        ));
-
-    // Pokój 104 (Awaria)
-        r4.addTask(new Task(
-                "Sprawdzenie klimatyzacji",
-                "Technik ma sprawdzić przyczynę usterki klimatyzacji.",
-                "W trakcie"
-        ));
-
-        r4.addTask(new Task(
-                "Zgłoszenie do serwisu",
-                "Przekazać zgłoszenie awarii do zewnętrznego serwisu.",
-                "Wykonane"
-        ));
-
-        roomGrid.setItems(r1, r2, r3, r4);
-
-
-        add(topBar, selectionActions, roomGrid);
+        add(topBar, roomGrid);
+        
+        // Załaduj dane z bazy (MUSI BYĆ PO inicjalizacji roomGrid!)
+        loadRoomsFromDatabase();
     }
 
-    private void updateSelectionActions() {
-        int count = selectedRooms.size();
-        selectedInfo.setText("Zaznaczono: " + count);
-        selectionActions.setVisible(count > 0);
+    // =====================================================
+    // METODY POMOCNICZE
+    // =====================================================
+    
+    /**
+     * Publiczna metoda do odświeżania danych z bazy - używana przez automatyczne odświeżanie.
+     */
+    public void refreshData() {
+        loadRoomsFromDatabase();
+    }
+    
+    private void loadRoomsFromDatabase() {
+        rooms = roomService.findAll();
+        roomGrid.setItems(rooms);
     }
 
-    private void openAddTaskDialog() {
-        if (selectedRooms.isEmpty()) {
-            Notification.show("Najpierw zaznacz pokój.");
-            return;
+    private void filterRooms(RoomStatus status, String searchText) {
+        List<Room> filtered = rooms;
+        
+        if (status != null) {
+            filtered = filtered.stream()
+                    .filter(room -> room.getRoomStatus() == status)
+                    .collect(Collectors.toList());
+        }
+        
+        if (searchText != null && !searchText.trim().isEmpty()) {
+            String search = searchText.trim().toLowerCase();
+            filtered = filtered.stream()
+                    .filter(room -> room.getNumber().toLowerCase().contains(search))
+                    .collect(Collectors.toList());
+        }
+        
+        roomGrid.setItems(filtered);
+    }
+
+    private String formatRoomType(RoomType type) {
+        switch (type) {
+            case SINGLE: return "Pojedynczy";
+            case DOUBLE: return "Podwójny";
+            case SUITE: return "Apartament";
+            case OTHER: return "Inny";
+            default: return type.name();
+        }
+    }
+
+    private String formatRoomStatus(RoomStatus status) {
+        switch (status) {
+            case READY: return "Gotowy";
+            case DIRTY: return "Brudny";
+            case CLEANING: return "Sprzątanie";
+            case IN_MAINTENANCE: return "Konserwacja";
+            case OUT_OF_ORDER: return "Awaria";
+            default: return status.name();
+        }
+    }
+
+    private void openTaskDetailsDialog(org.systemhotelowy.model.Task task) {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("500px");
+        dialog.setHeaderTitle("Szczegóły zadania");
+
+        FormLayout formLayout = new FormLayout();
+        formLayout.addFormItem(new Span(task.getDescription()), "Opis");
+        formLayout.addFormItem(new Span(task.getStatus().toString()), "Status");
+        if (task.getRemarks() != null) {
+            formLayout.addFormItem(new Span(task.getRemarks()), "Uwagi");
+        }
+        if (task.getAssignedTo() != null) {
+            formLayout.addFormItem(
+                new Span(task.getAssignedTo().getFirstName() + " " + task.getAssignedTo().getLastName()), 
+                "Przypisany do"
+            );
         }
 
-        Dialog dialog = new Dialog();
-        dialog.setWidth("400px");
-
-        TextField title = new TextField("Tytuł zadania");
-        TextArea description = new TextArea("Opis zadania");
-        description.setHeight("150px");
-
-
-
-        Button save = new Button("Zapisz", e -> {
-            Task task = new Task(
-                    title.getValue(),
-                    description.getValue(),
-                    "W trakcie"
-
-            );
-
-            selectedRooms.forEach(r -> r.addTask(task));
-            roomGrid.getDataProvider().refreshAll();
+        Button closeBtn = new Button("Zamknij", e -> dialog.close());
+        Button deleteBtn = new Button("Usuń zadanie", e -> {
+            taskService.deleteById(task.getId());
+            loadRoomsFromDatabase();
             dialog.close();
+            showSuccess("Zadanie usunięte");
         });
+        deleteBtn.getStyle().set("color", "red");
 
-        dialog.add(new VerticalLayout(title, description, save));
-        dialog.open();
-    }
-
-    private void openTaskInfoDialog(RoomRow room, Task task) {
-        Dialog dialog = new Dialog();
-        dialog.setWidth("400px");
-
-        Span title = new Span("Tytuł: " + task.getTitle());
-        Span status = new Span("Status: " + task.getStatus());
-        Span desc = new Span("Opis: " + task.getDescription());
-
-        Button delete = new Button("Usuń zadanie", e -> {
-            room.removeTask(task);
-            roomGrid.getDataProvider().refreshAll();
-            dialog.close();
-        });
-
-        dialog.add(new VerticalLayout(title, status, desc, delete));
+        dialog.add(formLayout);
+        dialog.getFooter().add(deleteBtn, closeBtn);
         dialog.open();
     }
 
@@ -368,65 +322,240 @@ public class RoomPanel extends VerticalLayout {
     private void openAddRoomDialog() {
         Dialog dialog = new Dialog();
         dialog.setWidth("500px");
+        dialog.setHeaderTitle("Dodaj nowy pokój");
 
         FormLayout form = new FormLayout();
+        
         TextField roomNumber = new TextField("Numer pokoju");
+        roomNumber.setRequired(true);
+        
+        IntegerField floorField = new IntegerField("Piętro");
+        floorField.setValue(1);
+        
+        ComboBox<RoomType> typeCombo = new ComboBox<>("Typ pokoju");
+        typeCombo.setItems(RoomType.values());
+        typeCombo.setItemLabelGenerator(this::formatRoomType);
+        typeCombo.setValue(RoomType.SINGLE);
+        typeCombo.setRequired(true);
+        
+        ComboBox<RoomStatus> statusCombo = new ComboBox<>("Status");
+        statusCombo.setItems(RoomStatus.values());
+        statusCombo.setItemLabelGenerator(this::formatRoomStatus);
+        statusCombo.setValue(RoomStatus.DIRTY);
+        statusCombo.setRequired(true);
+        
+        IntegerField capacityField = new IntegerField("Pojemność (liczba osób)");
+        capacityField.setValue(2);
+        capacityField.setMin(1);
+        capacityField.setMax(10);
+        capacityField.setRequired(true);
 
-        ComboBox<String> worker = new ComboBox<>("Pracownik");
-        worker.setItems("Anna", "Jan", "Maria", "Brak przypisania");
+        form.add(roomNumber, floorField, typeCombo, statusCombo, capacityField);
 
-        TextField maxPeople = new TextField("Max osób");
-        TextField price = new TextField("Cena za dobę");
-
-        TextField location = new TextField("Lokalizacja pokoju");
-        TextArea equipment = new TextArea("Wyposażenie");
-
-        equipment.setHeight("120px");
-
-        form.add(roomNumber, worker, maxPeople, price, location, equipment);
-
-        Button save = new Button("Zapisz", e -> {
-            roomGrid.getListDataView().addItem(new RoomRow(
-                    roomNumber.getValue(),
-                    "Wolny",
-                    worker.getValue(),
-                    "-",
-                    ""
-            ));
-            dialog.close();
-            Notification.show("Pokój dodany!");
+        Button saveBtn = new Button("Zapisz", e -> {
+            if (roomNumber.isEmpty()) {
+                showError("Numer pokoju jest wymagany");
+                return;
+            }
+            
+            try {
+                Room room = new Room();
+                room.setNumber(roomNumber.getValue());
+                room.setFloor(floorField.getValue());
+                room.setType(typeCombo.getValue());
+                room.setRoomStatus(statusCombo.getValue());
+                room.setCapacity(capacityField.getValue());
+                
+                roomService.create(room);
+                loadRoomsFromDatabase();
+                dialog.close();
+                showSuccess("Pokój dodany pomyślnie");
+            } catch (Exception ex) {
+                showError("Błąd przy dodawaniu pokoju: " + ex.getMessage());
+            }
         });
 
-        Button cancel = new Button("Anuluj", e -> dialog.close());
+        Button cancelBtn = new Button("Anuluj", e -> dialog.close());
 
-        dialog.add(new VerticalLayout(form, new HorizontalLayout(save, cancel)));
+        dialog.add(form);
+        dialog.getFooter().add(cancelBtn, saveBtn);
         dialog.open();
     }
 
-    private void openReportDialog(RoomRow room, Report rep) {
+    private void openEditRoomDialog(Room room) {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("500px");
+        dialog.setHeaderTitle("Edytuj pokój " + room.getNumber());
+
+        FormLayout form = new FormLayout();
+        
+        TextField roomNumber = new TextField("Numer pokoju");
+        roomNumber.setValue(room.getNumber());
+        
+        IntegerField floorField = new IntegerField("Piętro");
+        floorField.setValue(room.getFloor() != null ? room.getFloor() : 1);
+        
+        ComboBox<RoomType> typeCombo = new ComboBox<>("Typ pokoju");
+        typeCombo.setItems(RoomType.values());
+        typeCombo.setItemLabelGenerator(this::formatRoomType);
+        typeCombo.setValue(room.getType());
+        
+        ComboBox<RoomStatus> statusCombo = new ComboBox<>("Status");
+        statusCombo.setItems(RoomStatus.values());
+        statusCombo.setItemLabelGenerator(this::formatRoomStatus);
+        statusCombo.setValue(room.getRoomStatus());
+        
+        IntegerField capacityField = new IntegerField("Pojemność (liczba osób)");
+        capacityField.setValue(room.getCapacity() != null ? room.getCapacity() : 2);
+        capacityField.setMin(1);
+        capacityField.setMax(10);
+
+        form.add(roomNumber, floorField, typeCombo, statusCombo, capacityField);
+
+        Button saveBtn = new Button("Zapisz", e -> {
+            try {
+                room.setNumber(roomNumber.getValue());
+                room.setFloor(floorField.getValue());
+                room.setType(typeCombo.getValue());
+                room.setRoomStatus(statusCombo.getValue());
+                room.setCapacity(capacityField.getValue());
+                
+                roomService.update(room);
+                loadRoomsFromDatabase();
+                dialog.close();
+                showSuccess("Pokój zaktualizowany");
+            } catch (Exception ex) {
+                showError("Błąd: " + ex.getMessage());
+            }
+        });
+
+        Button cancelBtn = new Button("Anuluj", e -> dialog.close());
+
+        dialog.add(form);
+        dialog.getFooter().add(cancelBtn, saveBtn);
+        dialog.open();
+    }
+
+    private void openChangeStatusDialog(Room room) {
         Dialog dialog = new Dialog();
         dialog.setWidth("400px");
+        dialog.setHeaderTitle("Zmień status pokoju " + room.getNumber());
 
-        Span title = new Span("Tytuł: " + rep.getTitle());
-        Span status = new Span("Status: " + rep.getStatus());
-        Span content = new Span("Treść: " + rep.getContent());
+        ComboBox<RoomStatus> statusCombo = new ComboBox<>("Nowy status");
+        statusCombo.setItems(RoomStatus.values());
+        statusCombo.setItemLabelGenerator(this::formatRoomStatus);
+        statusCombo.setValue(room.getRoomStatus());
+        statusCombo.setWidthFull();
 
-        Button markRead = new Button("Oznacz jako przeczytane", e -> {
-            rep.setStatus("Przeczytane");
-            roomGrid.getDataProvider().refreshAll();
-            dialog.close();
+        Button saveBtn = new Button("Zapisz", e -> {
+            try {
+                roomService.updateStatus(room.getId(), statusCombo.getValue());
+                loadRoomsFromDatabase();
+                dialog.close();
+                showSuccess("Status zmieniony na: " + formatRoomStatus(statusCombo.getValue()));
+            } catch (Exception ex) {
+                showError("Błąd: " + ex.getMessage());
+            }
         });
 
-        Button delete = new Button("Usuń zgłoszenie", e -> {
-            room.removeReport(rep);
-            roomGrid.getDataProvider().refreshAll();
-            dialog.close();
-        });
+        Button cancelBtn = new Button("Anuluj", e -> dialog.close());
 
-        dialog.add(new VerticalLayout(title, status, content, markRead, delete));
+        dialog.add(statusCombo);
+        dialog.getFooter().add(cancelBtn, saveBtn);
         dialog.open();
     }
 
+    private void openAddTaskForRoomDialog(Room room) {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("500px");
+        dialog.setHeaderTitle("Dodaj zadanie dla pokoju " + room.getNumber());
 
+        FormLayout form = new FormLayout();
+        
+        TextArea descriptionArea = new TextArea("Opis zadania");
+        descriptionArea.setHeight("120px");
+        descriptionArea.setWidthFull();
+        descriptionArea.setRequired(true);
+        
+        TextArea remarksArea = new TextArea("Uwagi");
+        remarksArea.setHeight("80px");
+        remarksArea.setWidthFull();
+        
+        ComboBox<User> assignToCombo = new ComboBox<>("Przypisz do");
+        List<User> workers = userService.findAll().stream()
+                .filter(u -> u.getRole() == Role.CLEANER || u.getRole() == Role.MANAGER)
+                .collect(Collectors.toList());
+        assignToCombo.setItems(workers);
+        assignToCombo.setItemLabelGenerator(u -> u.getFirstName() + " " + u.getLastName() + " (" + u.getEmail() + ")");
+        
+        IntegerField durationField = new IntegerField("Czas trwania (minuty)");
+        durationField.setValue(30);
+        durationField.setMin(1);
 
+        form.add(descriptionArea, remarksArea, assignToCombo, durationField);
+
+        Button saveBtn = new Button("Zapisz", e -> {
+            if (descriptionArea.isEmpty()) {
+                showError("Opis zadania jest wymagany");
+                return;
+            }
+            
+            try {
+                org.systemhotelowy.model.Task task = new org.systemhotelowy.model.Task();
+                task.setDescription(descriptionArea.getValue());
+                task.setRemarks(remarksArea.getValue());
+                task.setStatus(TaskStatus.PENDING);
+                task.setScheduledAt(LocalDateTime.now());
+                task.setDurationInMinutes(durationField.getValue());
+                task.setAssignedTo(assignToCombo.getValue());
+                task.setRoom(room);
+                
+                taskService.create(task);
+                loadRoomsFromDatabase();
+                dialog.close();
+                showSuccess("Zadanie dodane pomyślnie");
+            } catch (Exception ex) {
+                showError("Błąd: " + ex.getMessage());
+            }
+        });
+
+        Button cancelBtn = new Button("Anuluj", e -> dialog.close());
+
+        dialog.add(form);
+        dialog.getFooter().add(cancelBtn, saveBtn);
+        dialog.open();
+    }
+
+    private void deleteRoom(Room room) {
+        Dialog confirmDialog = new Dialog();
+        confirmDialog.setHeaderTitle("Potwierdź usunięcie");
+        confirmDialog.add(new Span("Czy na pewno chcesz usunąć pokój " + room.getNumber() + "?"));
+
+        Button confirmBtn = new Button("Usuń", e -> {
+            try {
+                roomService.deleteById(room.getId());
+                loadRoomsFromDatabase();
+                confirmDialog.close();
+                showSuccess("Pokój usunięty");
+            } catch (Exception ex) {
+                showError("Błąd: " + ex.getMessage());
+            }
+        });
+        confirmBtn.getStyle().set("color", "red");
+
+        Button cancelBtn = new Button("Anuluj", e -> confirmDialog.close());
+
+        confirmDialog.getFooter().add(cancelBtn, confirmBtn);
+        confirmDialog.open();
+    }
+
+    private void showError(String message) {
+        Notification notification = Notification.show(message, 3000, Notification.Position.TOP_CENTER);
+        notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+    }
+
+    private void showSuccess(String message) {
+        Notification notification = Notification.show(message, 3000, Notification.Position.TOP_CENTER);
+        notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    }
 }
