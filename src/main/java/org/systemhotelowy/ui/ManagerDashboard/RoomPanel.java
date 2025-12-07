@@ -336,8 +336,14 @@ public class RoomPanel extends VerticalLayout {
         statusCombo.setItemLabelGenerator(this::formatRoomStatus);
         statusCombo.setValue(RoomStatus.DIRTY);
         statusCombo.setRequired(true);
+        
+        IntegerField capacityField = new IntegerField("Pojemność (liczba osób)");
+        capacityField.setValue(2);
+        capacityField.setMin(1);
+        capacityField.setMax(10);
+        capacityField.setRequired(true);
 
-        form.add(roomNumber, floorField, typeCombo, statusCombo);
+        form.add(roomNumber, floorField, typeCombo, statusCombo, capacityField);
 
         Button saveBtn = new Button("Zapisz", e -> {
             if (roomNumber.isEmpty()) {
@@ -351,6 +357,7 @@ public class RoomPanel extends VerticalLayout {
                 room.setFloor(floorField.getValue());
                 room.setType(typeCombo.getValue());
                 room.setRoomStatus(statusCombo.getValue());
+                room.setCapacity(capacityField.getValue());
                 
                 roomService.create(room);
                 loadRoomsFromDatabase();
@@ -390,8 +397,13 @@ public class RoomPanel extends VerticalLayout {
         statusCombo.setItems(RoomStatus.values());
         statusCombo.setItemLabelGenerator(this::formatRoomStatus);
         statusCombo.setValue(room.getRoomStatus());
+        
+        IntegerField capacityField = new IntegerField("Pojemność (liczba osób)");
+        capacityField.setValue(room.getCapacity() != null ? room.getCapacity() : 2);
+        capacityField.setMin(1);
+        capacityField.setMax(10);
 
-        form.add(roomNumber, floorField, typeCombo, statusCombo);
+        form.add(roomNumber, floorField, typeCombo, statusCombo, capacityField);
 
         Button saveBtn = new Button("Zapisz", e -> {
             try {
@@ -399,6 +411,7 @@ public class RoomPanel extends VerticalLayout {
                 room.setFloor(floorField.getValue());
                 room.setType(typeCombo.getValue());
                 room.setRoomStatus(statusCombo.getValue());
+                room.setCapacity(capacityField.getValue());
                 
                 roomService.update(room);
                 loadRoomsFromDatabase();

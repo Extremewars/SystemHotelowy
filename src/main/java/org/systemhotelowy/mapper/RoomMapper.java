@@ -18,6 +18,7 @@ public class RoomMapper {
         room.setFloor(request.getFloor());
         room.setType(request.getType());
         room.setRoomStatus(request.getRoomStatus());
+        room.setCapacity(request.getCapacity());
 
         return room;
     }
@@ -33,6 +34,7 @@ public class RoomMapper {
         response.setFloor(room.getFloor());
         response.setType(room.getType());
         response.setRoomStatus(room.getRoomStatus());
+        response.setCapacity(room.getCapacity());
 
         return response;
     }

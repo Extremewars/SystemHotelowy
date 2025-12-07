@@ -39,4 +39,7 @@ public class Room {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RoomStatus roomStatus;
+
+    @Column(nullable = false)
+    private Integer capacity = 1;
 }

@@ -1,5 +1,5 @@
 package org.systemhotelowy.ui;
-public  class Room {
+public class Room {
     private String name;
     private int maxPeople;
     private double price;

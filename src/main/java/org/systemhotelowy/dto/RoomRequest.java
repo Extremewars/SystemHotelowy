@@ -23,4 +23,7 @@ public class RoomRequest {
 
     @NotNull(message = "Status pokoju jest wymagany")
     private RoomStatus roomStatus;
+
+    @NotNull(message = "Pojemność pokoju jest wymagana")
+    private Integer capacity;
 }

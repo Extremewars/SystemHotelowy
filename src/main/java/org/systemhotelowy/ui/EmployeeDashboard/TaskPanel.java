@@ -12,8 +12,9 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
-import org.systemhotelowy.model.*;
-import org.systemhotelowy.service.RoomService;
+import org.systemhotelowy.model.Task;
+import org.systemhotelowy.model.TaskStatus;
+import org.systemhotelowy.model.User;
 import org.systemhotelowy.service.TaskService;
 import org.systemhotelowy.service.VaadinAuthenticationService;
 
