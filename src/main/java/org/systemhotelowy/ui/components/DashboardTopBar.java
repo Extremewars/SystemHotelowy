@@ -9,6 +9,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import org.systemhotelowy.model.User;
 import org.systemhotelowy.service.VaadinAuthenticationService;
+import org.systemhotelowy.utils.NotificationUtils;
 import org.systemhotelowy.utils.VaadinSecurityHelper;
 
 /**
@@ -36,7 +37,7 @@ public class DashboardTopBar extends VerticalLayout {
         
         Button logoutBtn = new Button("Wyloguj", e -> {
             securityHelper.logout();
-            Notification.show("Wylogowano!");
+            NotificationUtils.showSuccess("Wylogowano!");
         });
 
         HorizontalLayout rightSide = new HorizontalLayout(loggedUser, logoutBtn);

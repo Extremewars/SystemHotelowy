@@ -14,6 +14,9 @@ public interface TaskRepository extends JpaRepository<Task, Integer> {
     @Query("SELECT t FROM Task t LEFT JOIN FETCH t.room LEFT JOIN FETCH t.assignedTo WHERE t.room.id = :roomId")
     List<Task> findByRoomId(@Param("roomId") Integer roomId);
 
+    @Query("SELECT t FROM Task t LEFT JOIN FETCH t.room LEFT JOIN FETCH t.assignedTo WHERE t.room.id IN :roomIds")
+    List<Task> findByRoomIdIn(@Param("roomIds") List<Integer> roomIds);
+
     @Query("SELECT t FROM Task t LEFT JOIN FETCH t.room LEFT JOIN FETCH t.assignedTo WHERE t.assignedTo.id = :userId")
     List<Task> findByAssignedToId(@Param("userId") Integer userId);
 

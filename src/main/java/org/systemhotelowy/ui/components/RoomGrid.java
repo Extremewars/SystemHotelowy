@@ -53,7 +53,19 @@ public class RoomGrid extends Grid<Room> {
     }
 
     private void addColumns() {
-        addColumn(Room::getNumber).setHeader("Numer").setWidth("80px").setSortable(true);
+        addColumn(Room::getNumber)
+                .setHeader("Numer")
+                .setWidth("100px")
+                .setSortable(true)
+                .setComparator((r1, r2) -> {
+                    String n1 = r1.getNumber();
+                    String n2 = r2.getNumber();
+                    try {
+                        return Integer.compare(Integer.parseInt(n1), Integer.parseInt(n2));
+                    } catch (NumberFormatException e) {
+                        return n1.compareToIgnoreCase(n2);
+                    }
+                });
 
         addColumn(r -> r.getFloor() != null ? r.getFloor() : "-").setHeader("Piętro").setWidth("80px");
 
@@ -80,12 +92,20 @@ public class RoomGrid extends Grid<Room> {
                         r.getNumber().toLowerCase().contains(searchFilter.trim().toLowerCase()))
                 .collect(Collectors.toList());
 
-        // 2. Pobranie tasków dla przefiltrowanych pokoi (Batch fetching byłby lepszy w serwisie, tu uproszczenie)
+        // 2. Pobranie tasków dla przefiltrowanych pokoi (Batch fetching)
         tasksCache.clear();
-        for (Room r : filtered) {
-            // Zakładam, że ta metoda jest lekka lub zwraca Lazy listę.
-            // W produkcji lepiej użyć: taskService.findByRoomIds(listOfIds)
-            tasksCache.put(r.getId(), taskService.findByRoomId(r.getId()));
+        if (!filtered.isEmpty()) {
+            List<Integer> roomIds = filtered.stream()
+                    .map(Room::getId)
+                    .collect(Collectors.toList());
+            
+            List<Task> allTasks = taskService.findByRoomIds(roomIds);
+            
+            // Grupujemy taski po ID pokoju
+            Map<Integer, List<Task>> groupedTasks = allTasks.stream()
+                    .collect(Collectors.groupingBy(t -> t.getRoom().getId()));
+            
+            tasksCache.putAll(groupedTasks);
         }
 
         setItems(filtered);

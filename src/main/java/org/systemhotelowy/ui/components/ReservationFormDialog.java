@@ -6,8 +6,6 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextArea;
@@ -17,6 +15,7 @@ import org.systemhotelowy.model.Reservation;
 import org.systemhotelowy.model.ReservationStatus;
 import org.systemhotelowy.model.Room;
 import org.systemhotelowy.service.ReservationService;
+import org.systemhotelowy.utils.NotificationUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -137,7 +136,7 @@ public class ReservationFormDialog extends Dialog {
     private void save() {
         if (roomField.isEmpty() || checkInField.isEmpty() || checkOutField.isEmpty() ||
             guestNameField.isEmpty() || phoneField.isEmpty() || priceField.isEmpty()) {
-            showError("Wypełnij wszystkie wymagane pola");
+            NotificationUtils.showError("Wypełnij wszystkie wymagane pola");
             return;
         }
 
@@ -156,7 +155,7 @@ public class ReservationFormDialog extends Dialog {
                 request.setNotes(notesField.getValue());
 
                 reservationService.create(request);
-                showSuccess("Rezerwacja dodana pomyślnie");
+                NotificationUtils.showSuccess("Rezerwacja dodana pomyślnie");
             } else {
                 ReservationRequest request = new ReservationRequest();
                 request.setRoomId(roomField.getValue().getId());
@@ -176,14 +175,14 @@ public class ReservationFormDialog extends Dialog {
                 request.setNotes(notesField.getValue());
                 
                 reservationService.update(reservation.getId(), request);
-                showSuccess("Rezerwacja zaktualizowana");
+                NotificationUtils.showSuccess("Rezerwacja zaktualizowana");
             }
 
             if (onSuccess != null) onSuccess.run();
             close();
 
         } catch (Exception ex) {
-            showError("Błąd: " + ex.getMessage());
+            NotificationUtils.showError("Błąd: " + ex.getMessage());
         }
     }
 
@@ -197,15 +196,5 @@ public class ReservationFormDialog extends Dialog {
             case CHECKED_OUT -> "Wymeldowany";
             default -> status.name();
         };
-    }
-
-    private void showError(String message) {
-        Notification notification = Notification.show(message, 3000, Notification.Position.TOP_CENTER);
-        notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
-    }
-
-    private void showSuccess(String message) {
-        Notification notification = Notification.show(message, 3000, Notification.Position.TOP_CENTER);
-        notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
 }

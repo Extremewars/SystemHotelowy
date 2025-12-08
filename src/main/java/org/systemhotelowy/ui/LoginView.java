@@ -19,6 +19,7 @@ import org.systemhotelowy.model.Role;
 import org.systemhotelowy.model.User;
 import org.systemhotelowy.service.UserService;
 import org.systemhotelowy.service.VaadinAuthenticationService;
+import org.systemhotelowy.utils.NotificationUtils;
 import org.systemhotelowy.utils.VaadinSecurityHelper;
 
 /**
@@ -172,15 +173,15 @@ public class LoginView extends VerticalLayout {
      */
     private void handleLogin(String email, String password) {
         if (email == null || email.isBlank() || password == null || password.isBlank()) {
-            showError("Wypełnij wszystkie pola");
+            NotificationUtils.showError("Wypełnij wszystkie pola");
             return;
         }
 
         if (authService.login(email, password)) {
-            showSuccess("Zalogowano pomyślnie!");
+            NotificationUtils.showSuccess("Zalogowano pomyślnie!");
             securityHelper.navigateToDashboard();
         } else {
-            showError("Nieprawidłowy email lub hasło");
+            NotificationUtils.showError("Nieprawidłowy email lub hasło");
         }
     }
 
@@ -194,23 +195,23 @@ public class LoginView extends VerticalLayout {
             lastName == null || lastName.isBlank() ||
             email == null || email.isBlank() ||
             password == null || password.isBlank()) {
-            showError("Wypełnij wszystkie pola");
+            NotificationUtils.showError("Wypełnij wszystkie pola");
             return;
         }
 
         if (password.length() < 6) {
-            showError("Hasło musi mieć co najmniej 6 znaków");
+            NotificationUtils.showError("Hasło musi mieć co najmniej 6 znaków");
             return;
         }
 
         if (!password.equals(confirmPassword)) {
-            showError("Hasła nie są identyczne");
+            NotificationUtils.showError("Hasła nie są identyczne");
             return;
         }
 
         // Sprawdzenie czy użytkownik już istnieje
         if (userService.findByEmail(email).isPresent()) {
-            showError("Użytkownik o podanym emailu już istnieje");
+            NotificationUtils.showError("Użytkownik o podanym emailu już istnieje");
             return;
         }
 
@@ -222,19 +223,9 @@ public class LoginView extends VerticalLayout {
         User user = userMapper.toEntity(request);
         userService.create(user);
 
-        showSuccess("Rejestracja udana! Możesz się teraz zalogować.");
+        NotificationUtils.showSuccess("Rejestracja udana! Możesz się teraz zalogować.");
         
         // Automatyczne logowanie po rejestracji
         handleLogin(email, password);
-    }
-
-    private void showError(String message) {
-        Notification notification = Notification.show(message, 3000, Notification.Position.TOP_CENTER);
-        notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
-    }
-
-    private void showSuccess(String message) {
-        Notification notification = Notification.show(message, 3000, Notification.Position.TOP_CENTER);
-        notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
 }

@@ -3,6 +3,7 @@ package org.systemhotelowy.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.CreationTimestamp;
@@ -49,8 +50,9 @@ public class Task {
     @Column(nullable = false)
     private Integer durationInMinutes;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_to_id")
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "assigned_to_id", nullable = false)
     private User assignedTo;
 
     @ManyToOne(fetch = FetchType.LAZY)

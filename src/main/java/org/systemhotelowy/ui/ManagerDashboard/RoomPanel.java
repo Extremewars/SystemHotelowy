@@ -2,27 +2,25 @@ package org.systemhotelowy.ui.ManagerDashboard;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.systemhotelowy.service.VaadinAuthenticationService;
-
 import org.systemhotelowy.model.Room;
 import org.systemhotelowy.model.RoomStatus;
 import org.systemhotelowy.model.User;
 import org.systemhotelowy.service.RoomService;
 import org.systemhotelowy.service.TaskService;
 import org.systemhotelowy.service.UserService;
+import org.systemhotelowy.service.VaadinAuthenticationService;
 import org.systemhotelowy.ui.components.RoomFormDialog;
 import org.systemhotelowy.ui.components.RoomGrid;
 import org.systemhotelowy.ui.components.TaskBatchDialog;
+import org.systemhotelowy.utils.NotificationUtils;
 
-import java.util.Set;
 import java.util.Optional;
+import java.util.Set;
 
 public class RoomPanel extends VerticalLayout {
 
@@ -66,7 +64,7 @@ public class RoomPanel extends VerticalLayout {
 
         Button refreshBtn = new Button("Odśwież", e -> {
             refreshGrid();
-            showNotification("Dane odświeżone", NotificationVariant.LUMO_SUCCESS);
+            NotificationUtils.showSuccess("Dane odświeżone");
         });
 
         Button addRoomBtn = new Button("Dodaj pokój", e -> openRoomDialog(new Room()));
@@ -117,7 +115,7 @@ public class RoomPanel extends VerticalLayout {
     }
 
     // ========================================================
-    // POPRAWIONA METODA OTWIERAJĄCA DIALOG ZBIORCZYCH ZADAŃ
+    // METODA OTWIERAJĄCA DIALOG ZBIORCZYCH ZADAŃ
     // ========================================================
     private void openBatchTaskDialog() {
         Set<Room> selected = roomGrid.getSelectedRooms();
@@ -126,7 +124,7 @@ public class RoomPanel extends VerticalLayout {
         Optional<User> currentUserOpt = authService.getAuthenticatedUser();
 
         if (currentUserOpt.isEmpty()) {
-            showNotification("Musisz być zalogowany, aby dodać zadania", NotificationVariant.LUMO_ERROR);
+            NotificationUtils.showError("Musisz być zalogowany, aby dodać zadania");
             return;
         }
 
@@ -134,7 +132,7 @@ public class RoomPanel extends VerticalLayout {
 
         TaskBatchDialog dialog = new TaskBatchDialog(
                 selected,
-                currentUser, // <--- Tutaj przekazujemy obiekt User
+                currentUser,
                 taskService,
                 userService,
                 () -> {
@@ -149,9 +147,13 @@ public class RoomPanel extends VerticalLayout {
         try {
             roomService.deleteById(room.getId());
             refreshGrid();
-            showNotification("Pokój usunięty", NotificationVariant.LUMO_SUCCESS);
+            NotificationUtils.showSuccess("Pokój usunięty");
         } catch (Exception e) {
-            showNotification("Nie można usunąć pokoju: " + e.getMessage(), NotificationVariant.LUMO_ERROR);
+            if (e.getMessage().contains("constraint") || e.getMessage().contains("Constraint")) {
+                NotificationUtils.showError("Nie można usunąć pokoju, ponieważ istnieją powiązane z nim zadania lub rezerwacje.");
+            } else {
+                NotificationUtils.showError("Błąd usuwania: " + e.getMessage());
+            }
         }
     }
 
@@ -165,10 +167,5 @@ public class RoomPanel extends VerticalLayout {
             case OUT_OF_ORDER -> "Awaria";
             default -> status.name();
         };
-    }
-
-    private void showNotification(String text, NotificationVariant variant) {
-        Notification notification = Notification.show(text, 3000, Notification.Position.BOTTOM_START);
-        notification.addThemeVariants(variant);
     }
 }

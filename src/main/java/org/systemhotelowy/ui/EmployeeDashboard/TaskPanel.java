@@ -4,11 +4,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
@@ -17,6 +13,8 @@ import org.systemhotelowy.model.TaskStatus;
 import org.systemhotelowy.model.User;
 import org.systemhotelowy.service.TaskService;
 import org.systemhotelowy.service.VaadinAuthenticationService;
+import org.systemhotelowy.ui.components.TaskGrid;
+import org.systemhotelowy.utils.NotificationUtils;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -31,7 +29,7 @@ public class TaskPanel extends VerticalLayout {
     private final TaskService taskService;
     private final VaadinAuthenticationService authService;
     
-    private Grid<Task> taskGrid;
+    private TaskGrid taskGrid;
     private List<Task> myTasks = new ArrayList<>();
 
     public TaskPanel(TaskService taskService, VaadinAuthenticationService authService) {
@@ -56,7 +54,7 @@ public class TaskPanel extends VerticalLayout {
 
         Button refreshBtn = new Button("Odśwież", e -> {
             loadMyTasks();
-            Notification.show("Zadania odświeżone", 2000, Notification.Position.BOTTOM_START);
+            NotificationUtils.showSuccess("Zadania odświeżone");
         });
 
         HorizontalLayout topBar = new HorizontalLayout(statusFilter, searchField, refreshBtn);
@@ -66,74 +64,7 @@ public class TaskPanel extends VerticalLayout {
         // ============================
         // GRID ZADAŃ
         // ============================
-        taskGrid = new Grid<>(Task.class, false);
-        taskGrid.setWidthFull();
-
-        // Kolumna Pokój
-        taskGrid.addColumn(task -> task.getRoom() != null ? task.getRoom().getNumber() : "-")
-                .setHeader("Pokój")
-                .setWidth("100px")
-                .setFlexGrow(0)
-                .setSortable(true);
-
-        // Kolumna Opis
-        taskGrid.addColumn(Task::getDescription)
-                .setHeader("Opis zadania")
-                .setWidth("300px")
-                .setFlexGrow(1);
-
-        // Kolumna Status
-        taskGrid.addComponentColumn(task -> {
-            Span s = new Span(formatTaskStatus(task.getStatus()));
-            s.getStyle().set("padding", "4px 8px")
-                    .set("border-radius", "4px")
-                    .set("font-weight", "500");
-            
-            switch (task.getStatus()) {
-                case DONE -> s.getStyle().set("background-color", "#d4edda").set("color", "#155724");
-                case IN_PROGRESS -> s.getStyle().set("background-color", "#cce5ff").set("color", "#004085");
-                case PENDING -> s.getStyle().set("background-color", "#fff3cd").set("color", "#856404");
-                case CANCELLED -> s.getStyle().set("background-color", "#f8d7da").set("color", "#721c24");
-            }
-            return s;
-        }).setHeader("Status")
-                .setWidth("140px")
-                .setFlexGrow(0);
-
-        // Kolumna Data
-        taskGrid.addColumn(task -> task.getScheduledAt().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")))
-                .setHeader("Zaplanowane na")
-                .setWidth("150px")
-                .setFlexGrow(0);
-
-        // Kolumna Czas trwania
-        taskGrid.addColumn(task -> task.getDurationInMinutes() + " min")
-                .setHeader("Czas")
-                .setWidth("80px")
-                .setFlexGrow(0);
-
-        // Kolumna Akcje
-        taskGrid.addComponentColumn(task -> {
-            HorizontalLayout actions = new HorizontalLayout();
-            
-            Button detailsBtn = new Button("Szczegóły", e -> openTaskDetailsDialog(task));
-            
-            Button statusBtn = new Button("Zmień status", e -> openChangeStatusDialog(task));
-            statusBtn.setEnabled(task.getStatus() != TaskStatus.DONE && task.getStatus() != TaskStatus.CANCELLED);
-            
-            actions.add(detailsBtn, statusBtn);
-            return actions;
-        }).setHeader("Akcje")
-                .setWidth("250px")
-                .setFlexGrow(0);
-
-        // Style
-        taskGrid.getStyle()
-                .set("border", "1px solid #ddd")
-                .set("border-radius", "10px")
-                .set("overflow", "hidden")
-                .set("box-shadow", "0 2px 6px rgba(0,0,0,0.1)");
-        taskGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+        taskGrid = new TaskGrid(this::openTaskDetailsDialog, this::openChangeStatusDialog);
 
         add(topBar, taskGrid);
         
@@ -237,9 +168,9 @@ public class TaskPanel extends VerticalLayout {
                 taskService.update(task);
                 loadMyTasks();
                 dialog.close();
-                showSuccess("Status zmieniony na: " + formatTaskStatus(statusCombo.getValue()));
+                NotificationUtils.showSuccess("Status zmieniony na: " + formatTaskStatus(statusCombo.getValue()));
             } catch (Exception ex) {
-                showError("Błąd: " + ex.getMessage());
+                NotificationUtils.showError("Błąd: " + ex.getMessage());
             }
         });
 
@@ -248,15 +179,5 @@ public class TaskPanel extends VerticalLayout {
         dialog.add(statusCombo);
         dialog.getFooter().add(cancelBtn, saveBtn);
         dialog.open();
-    }
-
-    private void showError(String message) {
-        Notification notification = Notification.show(message, 3000, Notification.Position.TOP_CENTER);
-        notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
-    }
-
-    private void showSuccess(String message) {
-        Notification notification = Notification.show(message, 3000, Notification.Position.TOP_CENTER);
-        notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
 }

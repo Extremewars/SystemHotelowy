@@ -6,8 +6,6 @@ import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
@@ -16,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.systemhotelowy.model.*;
 import org.systemhotelowy.service.TaskService;
 import org.systemhotelowy.service.UserService;
+import org.systemhotelowy.utils.NotificationUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -96,8 +95,9 @@ public class TaskBatchDialog extends Dialog {
         durationField.setMin(1);
 
         assignToCombo = new ComboBox<>("Przypisz do");
+        assignToCombo.setRequired(true);
         List<User> eligibleStaff = userService.findAll().stream()
-                .filter(u -> u.getRole() == Role.CLEANER || u.getRole() == Role.MANAGER)
+                .filter(u -> u.getRole() == Role.CLEANER)
                 .collect(Collectors.toList());
 
         assignToCombo.setItems(eligibleStaff);
@@ -118,8 +118,8 @@ public class TaskBatchDialog extends Dialog {
     }
 
     private void saveTasks() {
-        if (descriptionArea.isEmpty() || scheduledAtPicker.isEmpty()) {
-            showError("Opis i data są wymagane");
+        if (descriptionArea.isEmpty() || scheduledAtPicker.isEmpty() || assignToCombo.isEmpty()) {
+            NotificationUtils.showError("Opis, data i osoba przypisana są wymagane");
             return;
         }
 
@@ -129,7 +129,7 @@ public class TaskBatchDialog extends Dialog {
                 .collect(Collectors.toList());
 
         if (!taskService.canCreateTasksForRoomsAndDate(roomIds, scheduledAt.toLocalDate())) {
-            showError("Niektóre pokoje mają już zadania na ten dzień");
+            NotificationUtils.showError("Niektóre pokoje mają już zadania na ten dzień");
             return;
         }
 
@@ -137,7 +137,7 @@ public class TaskBatchDialog extends Dialog {
             List<Task> tasksToCreate = prepareTasksList(scheduledAt);
             List<Task> created = taskService.createBatch(tasksToCreate);
 
-            showSuccess("Utworzono " + created.size() + " zadań");
+            NotificationUtils.showSuccess("Utworzono " + created.size() + " zadań");
 
             if (onSuccess != null) {
                 onSuccess.run();
@@ -146,7 +146,7 @@ public class TaskBatchDialog extends Dialog {
 
         } catch (Exception ex) {
             log.error("Błąd tworzenia zadań", ex);
-            showError("Błąd: " + ex.getMessage());
+            NotificationUtils.showError("Błąd: " + ex.getMessage());
         }
     }
 
@@ -172,15 +172,5 @@ public class TaskBatchDialog extends Dialog {
             tasks.add(task);
         }
         return tasks;
-    }
-
-    private void showError(String message) {
-        Notification notification = Notification.show(message, 4000, Notification.Position.TOP_CENTER);
-        notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
-    }
-
-    private void showSuccess(String message) {
-        Notification notification = Notification.show(message, 3000, Notification.Position.TOP_CENTER);
-        notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
 }

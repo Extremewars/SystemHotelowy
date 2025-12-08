@@ -5,13 +5,13 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import org.systemhotelowy.model.Room;
 import org.systemhotelowy.model.RoomStatus;
 import org.systemhotelowy.model.RoomType;
 import org.systemhotelowy.service.RoomService;
+import org.systemhotelowy.utils.NotificationUtils;
 
 public class RoomFormDialog extends Dialog {
 
@@ -89,7 +89,7 @@ public class RoomFormDialog extends Dialog {
 
     private void save() {
         if (numberField.isEmpty()) {
-            Notification.show("Numer jest wymagany");
+            NotificationUtils.showError("Numer jest wymagany");
             return;
         }
 
@@ -106,12 +106,12 @@ public class RoomFormDialog extends Dialog {
                 roomService.update(room);
             }
 
-            Notification.show("Zapisano pomyślnie");
+            NotificationUtils.showSuccess("Zapisano pomyślnie");
             if (onSuccess != null) onSuccess.run();
             close();
 
         } catch (Exception e) {
-            Notification.show("Błąd: " + e.getMessage());
+            NotificationUtils.showError("Błąd: " + e.getMessage());
         }
     }
 
