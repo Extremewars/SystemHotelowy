@@ -22,7 +22,7 @@ public class RoomGrid extends Grid<Room> {
     private final TaskService taskService;
     private final Consumer<Set<Room>> selectionListener;
 
-    // Cache tasków, aby nie "zarzynać" bazy w pętli renderera
+    // Cache tasków, aby nie "obciążać" bazy w pętli renderera
     private Map<Integer, List<Task>> tasksCache = new HashMap<>();
 
     // Callbacki do akcji
