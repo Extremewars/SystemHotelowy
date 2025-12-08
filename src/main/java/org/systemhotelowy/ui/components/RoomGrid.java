@@ -95,6 +95,7 @@ public class RoomGrid extends Grid<Room> {
         return asMultiSelect().getSelectedItems();
     }
 
+    @Override
     public void deselectAll() {
         asMultiSelect().deselectAll();
     }
