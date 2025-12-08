@@ -13,6 +13,11 @@ import org.systemhotelowy.model.User;
 
 import java.util.Optional;
 
+import com.vaadin.flow.server.VaadinServletRequest;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
+
 /**
  * Serwis do zarządzania autentykacją w kontekście Vaadin.
  * Obsługuje logowanie, wylogowanie i sprawdzanie ról użytkownika.
@@ -24,10 +29,51 @@ public class VaadinAuthenticationService {
     
     private final AuthenticationContext authenticationContext;
     private final UserService userService;
+    private final AuthenticationManager authenticationManager;
 
-    public VaadinAuthenticationService(AuthenticationContext authenticationContext, UserService userService) {
+    public VaadinAuthenticationService(AuthenticationContext authenticationContext, UserService userService, AuthenticationManager authenticationManager) {
         this.authenticationContext = authenticationContext;
         this.userService = userService;
+        this.authenticationManager = authenticationManager;
+    }
+
+    /**
+     * Loguje użytkownika używając AuthenticationManager i ustawia kontekst bezpieczeństwa.
+     */
+    public boolean login(String email, String password) {
+        try {
+            // KROK 1: Autentykacja przez Spring Security
+            Authentication auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, password)
+            );
+            
+            // KROK 2: Ustaw w SecurityContextHolder (dla Spring Security)
+            SecurityContextHolder.getContext().setAuthentication(auth);
+            
+            // KROK 3: Ustaw w sesji HTTP (dla Vaadin)
+            VaadinServletRequest request = VaadinServletRequest.getCurrent();
+            if (request != null && request.getHttpServletRequest() != null) {
+                // Zapisz SecurityContext w sesji HTTP - to kluczowe dla Vaadin!
+                request.getHttpServletRequest().getSession().setAttribute(
+                    "SPRING_SECURITY_CONTEXT", 
+                    SecurityContextHolder.getContext()
+                );
+                log.debug("Zapisano SecurityContext w sesji HTTP dla użytkownika: {}", email);
+            }
+            
+            // KROK 4: Cache użytkownika w VaadinSession
+            userService.findByEmail(email).ifPresent(user -> {
+                if (VaadinSession.getCurrent() != null) {
+                    VaadinSession.getCurrent().setAttribute(User.class, user);
+                    log.debug("Zapisano użytkownika w VaadinSession: {}", user.getEmail());
+                }
+            });
+            
+            return true;
+        } catch (AuthenticationException e) {
+            log.warn("Nieudana próba logowania dla: {}", email);
+            return false;
+        }
     }
 
     /**

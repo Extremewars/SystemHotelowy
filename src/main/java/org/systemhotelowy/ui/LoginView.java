@@ -12,20 +12,14 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.VaadinServletRequest;
-import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import org.systemhotelowy.dto.UserRequest;
 import org.systemhotelowy.mapper.UserMapper;
 import org.systemhotelowy.model.Role;
 import org.systemhotelowy.model.User;
 import org.systemhotelowy.service.UserService;
+import org.systemhotelowy.service.VaadinAuthenticationService;
 import org.systemhotelowy.utils.VaadinSecurityHelper;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
  * Widok logowania i rejestracji z prawdziwą integracją Spring Security.
@@ -34,18 +28,18 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @AnonymousAllowed
 public class LoginView extends VerticalLayout {
 
-    private final AuthenticationManager authenticationManager;
+    private final VaadinAuthenticationService authService;
     private final UserService userService;
     private final UserMapper userMapper;
     private final VaadinSecurityHelper securityHelper;
 
     public LoginView(
-            AuthenticationManager authenticationManager,
+            VaadinAuthenticationService authService,
             UserService userService,
             UserMapper userMapper,
             VaadinSecurityHelper securityHelper
     ) {
-        this.authenticationManager = authenticationManager;
+        this.authService = authService;
         this.userService = userService;
         this.userMapper = userMapper;
         this.securityHelper = securityHelper;
@@ -182,40 +176,10 @@ public class LoginView extends VerticalLayout {
             return;
         }
 
-        try {
-            // KROK 1: Autentykacja przez Spring Security
-            Authentication auth = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(email, password)
-            );
-            
-            // KROK 2: Ustaw w SecurityContextHolder (dla Spring Security)
-            SecurityContextHolder.getContext().setAuthentication(auth);
-            
-            // KROK 3: Ustaw w sesji HTTP (dla Vaadin)
-            VaadinServletRequest request = VaadinServletRequest.getCurrent();
-            if (request != null && request.getHttpServletRequest() != null) {
-                // Zapisz SecurityContext w sesji HTTP - to kluczowe dla Vaadin!
-                request.getHttpServletRequest().getSession().setAttribute(
-                    "SPRING_SECURITY_CONTEXT", 
-                    SecurityContextHolder.getContext()
-                );
-                System.out.println("DEBUG: Zapisano SecurityContext w sesji HTTP dla użytkownika: " + email);
-            } else {
-                System.err.println("WARN: VaadinServletRequest lub HttpServletRequest jest null!");
-            }
-            
-            // KROK 4: Cache użytkownika w VaadinSession (bezpośrednie rozwiązanie)
-            userService.findByEmail(email).ifPresent(user -> {
-                if (VaadinSession.getCurrent() != null) {
-                    VaadinSession.getCurrent().setAttribute(User.class, user);
-                    System.out.println("DEBUG: Zapisano użytkownika w VaadinSession: " + user.getEmail());
-                }
-            });
-            
+        if (authService.login(email, password)) {
             showSuccess("Zalogowano pomyślnie!");
             securityHelper.navigateToDashboard();
-            
-        } catch (AuthenticationException e) {
+        } else {
             showError("Nieprawidłowy email lub hasło");
         }
     }

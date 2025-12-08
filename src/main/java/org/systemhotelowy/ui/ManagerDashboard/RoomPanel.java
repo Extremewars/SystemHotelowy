@@ -9,9 +9,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-// Importy Spring Security
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.Authentication;
+import org.systemhotelowy.service.VaadinAuthenticationService;
 
 import org.systemhotelowy.model.Room;
 import org.systemhotelowy.model.RoomStatus;
@@ -33,16 +31,18 @@ public class RoomPanel extends VerticalLayout {
     private final RoomService roomService;
     private final TaskService taskService;
     private final UserService userService;
+    private final VaadinAuthenticationService authService;
 
     private RoomGrid roomGrid;
     private ComboBox<RoomStatus> statusFilter;
     private TextField searchField;
     private Button addTasksBtn;
 
-    public RoomPanel(RoomService roomService, TaskService taskService, UserService userService) {
+    public RoomPanel(RoomService roomService, TaskService taskService, UserService userService, VaadinAuthenticationService authService) {
         this.roomService = roomService;
         this.taskService = taskService;
         this.userService = userService;
+        this.authService = authService;
 
         setWidthFull();
         setSpacing(true);
@@ -123,20 +123,10 @@ public class RoomPanel extends VerticalLayout {
         Set<Room> selected = roomGrid.getSelectedRooms();
         if (selected.isEmpty()) return;
 
-        // 1. Pobierz Authentication z kontekstu
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            showNotification("Musisz być zalogowany, aby dodać zadania", NotificationVariant.LUMO_ERROR);
-            return;
-        }
-
-        // 2. Pobierz nazwę (email) i znajdź użytkownika w bazie
-        String currentEmail = authentication.getName();
-        Optional<User> currentUserOpt = userService.findByEmail(currentEmail);
+        Optional<User> currentUserOpt = authService.getAuthenticatedUser();
 
         if (currentUserOpt.isEmpty()) {
-            showNotification("Nie znaleziono zalogowanego użytkownika w bazie", NotificationVariant.LUMO_ERROR);
+            showNotification("Musisz być zalogowany, aby dodać zadania", NotificationVariant.LUMO_ERROR);
             return;
         }
 

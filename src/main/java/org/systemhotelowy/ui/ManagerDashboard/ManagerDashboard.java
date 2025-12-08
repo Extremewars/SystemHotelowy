@@ -4,6 +4,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
+import org.systemhotelowy.service.DashboardService;
 import org.systemhotelowy.service.ReservationService;
 import org.systemhotelowy.service.RoomService;
 import org.systemhotelowy.service.TaskService;
@@ -26,6 +27,7 @@ public class ManagerDashboard extends VerticalLayout {
     private final TaskService taskService;
     private final UserService userService;
     private final ReservationService reservationService;
+    private final DashboardService dashboardService;
 
     public ManagerDashboard(
             VaadinAuthenticationService authService,
@@ -33,7 +35,8 @@ public class ManagerDashboard extends VerticalLayout {
             RoomService roomService,
             TaskService taskService,
             UserService userService,
-            ReservationService reservationService
+            ReservationService reservationService,
+            DashboardService dashboardService
     ) {
         this.authService = authService;
         this.securityHelper = securityHelper;
@@ -41,6 +44,7 @@ public class ManagerDashboard extends VerticalLayout {
         this.taskService = taskService;
         this.userService = userService;
         this.reservationService = reservationService;
+        this.dashboardService = dashboardService;
         
         setSizeFull();
         setPadding(true);
@@ -50,14 +54,14 @@ public class ManagerDashboard extends VerticalLayout {
         //       GÓRNY PASEK + KPI
         // =========================
         DashboardTopBar topBar = new DashboardTopBar("Panel Kierownika", authService, securityHelper);
-        KpiPanel kpiPanel = new KpiPanel(roomService, taskService);
+        KpiPanel kpiPanel = new KpiPanel(dashboardService);
 
         add(topBar, kpiPanel);
 
         // =========================
         //       PANEL POKOI
         // =========================
-        RoomPanel roomPanel = new RoomPanel(roomService, taskService, userService);
+        RoomPanel roomPanel = new RoomPanel(roomService, taskService, userService, authService);
         add(roomPanel);
 
         // =========================
