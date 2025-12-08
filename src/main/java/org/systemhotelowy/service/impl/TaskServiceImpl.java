@@ -61,6 +61,15 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Task> findByRoomIds(List<Integer> roomIds) {
+        if (roomIds == null || roomIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return taskRepository.findByRoomIdIn(roomIds);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Task> findByRoomIdAndDate(Integer roomId, LocalDate date) {
         return taskRepository.findByRoomIdAndDate(roomId, date);
     }

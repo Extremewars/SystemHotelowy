@@ -8,11 +8,9 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import org.systemhotelowy.model.RoomStatus;
-import org.systemhotelowy.model.TaskStatus;
+import org.systemhotelowy.dto.EmployeeKpiData;
 import org.systemhotelowy.model.User;
-import org.systemhotelowy.service.RoomService;
-import org.systemhotelowy.service.TaskService;
+import org.systemhotelowy.service.DashboardService;
 import org.systemhotelowy.service.VaadinAuthenticationService;
 
 import java.util.concurrent.Executors;
@@ -26,8 +24,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class KpiPanel extends VerticalLayout {
 
-    private final RoomService roomService;
-    private final TaskService taskService;
+    private final DashboardService dashboardService;
     private final VaadinAuthenticationService authService;
     
     private HorizontalLayout kpiLayout;
@@ -39,9 +36,8 @@ public class KpiPanel extends VerticalLayout {
     private ScheduledExecutorService scheduler;
     private ScheduledFuture<?> refreshTask;
 
-    public KpiPanel(RoomService roomService, TaskService taskService, VaadinAuthenticationService authService) {
-        this.roomService = roomService;
-        this.taskService = taskService;
+    public KpiPanel(DashboardService dashboardService, VaadinAuthenticationService authService) {
+        this.dashboardService = dashboardService;
         this.authService = authService;
         
         setWidthFull();
@@ -88,33 +84,20 @@ public class KpiPanel extends VerticalLayout {
     }
     
     private void refreshData() {
-        // Pobierz aktualne dane z bazy
-        long readyRooms = roomService.findAll().stream()
-                .filter(room -> room.getRoomStatus() == RoomStatus.READY)
-                .count();
-        long dirtyRooms = roomService.findAll().stream()
-                .filter(room -> room.getRoomStatus() == RoomStatus.DIRTY)
-                .count();
-        
-        // Statystyki dla zalogowanego pracownika
         User currentUser = authService.getAuthenticatedUser().orElse(null);
-        long myTasks = 0;
-        long myPendingTasks = 0;
-        if (currentUser != null) {
-            myTasks = taskService.findByAssignedToId(currentUser.getId()).size();
-            myPendingTasks = taskService.findByAssignedToId(currentUser.getId()).stream()
-                    .filter(task -> task.getStatus() == TaskStatus.PENDING || task.getStatus() == TaskStatus.IN_PROGRESS)
-                    .count();
-        }
+        Integer userId = currentUser != null ? currentUser.getId() : null;
+        
+        EmployeeKpiData data = dashboardService.getEmployeeKpiData(userId);
         
         // Zaktualizuj wartości
-        if (readyValue != null) readyValue.setText(String.valueOf(readyRooms));
-        if (dirtyValue != null) dirtyValue.setText(String.valueOf(dirtyRooms));
-        if (myTasksValue != null) myTasksValue.setText(String.valueOf(myTasks));
-        if (pendingTasksValue != null) pendingTasksValue.setText(String.valueOf(myPendingTasks));
+        if (readyValue != null) readyValue.setText(String.valueOf(data.getReadyRooms()));
+        if (dirtyValue != null) dirtyValue.setText(String.valueOf(data.getDirtyRooms()));
+        if (myTasksValue != null) myTasksValue.setText(String.valueOf(data.getMyTasks()));
+        if (pendingTasksValue != null) pendingTasksValue.setText(String.valueOf(data.getMyPendingTasks()));
     }
 
     private Div createKpiBox(String title, VaadinIcon iconType, java.util.function.Consumer<Span> valueConsumer) {
+
         Div box = new Div();
         box.getStyle().set("border", "1px solid #ccc");
         box.getStyle().set("padding", "10px");

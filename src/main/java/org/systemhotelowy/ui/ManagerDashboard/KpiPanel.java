@@ -8,9 +8,8 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import org.systemhotelowy.model.RoomStatus;
-import org.systemhotelowy.service.RoomService;
-import org.systemhotelowy.service.TaskService;
+import org.systemhotelowy.dto.ManagerKpiData;
+import org.systemhotelowy.service.DashboardService;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -23,8 +22,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class KpiPanel extends VerticalLayout {
 
-    private final RoomService roomService;
-    private final TaskService taskService;
+    private final DashboardService dashboardService;
     
     private HorizontalLayout kpiLayout;
     private Span readyValue;
@@ -35,9 +33,8 @@ public class KpiPanel extends VerticalLayout {
     private ScheduledExecutorService scheduler;
     private ScheduledFuture<?> refreshTask;
 
-    public KpiPanel(RoomService roomService, TaskService taskService) {
-        this.roomService = roomService;
-        this.taskService = taskService;
+    public KpiPanel(DashboardService dashboardService) {
+        this.dashboardService = dashboardService;
         
         setWidthFull();
         setPadding(false);
@@ -83,23 +80,13 @@ public class KpiPanel extends VerticalLayout {
     }
     
     private void refreshData() {
-        // Pobierz aktualne dane z bazy
-        long readyRooms = roomService.findAll().stream()
-                .filter(room -> room.getRoomStatus() == RoomStatus.READY)
-                .count();
-        long dirtyRooms = roomService.findAll().stream()
-                .filter(room -> room.getRoomStatus() == RoomStatus.DIRTY)
-                .count();
-        long outOfOrderRooms = roomService.findAll().stream()
-                .filter(room -> room.getRoomStatus() == RoomStatus.OUT_OF_ORDER)
-                .count();
-        long totalTasks = taskService.findAll().size();
+        ManagerKpiData data = dashboardService.getManagerKpiData();
         
         // Zaktualizuj wartości
-        if (readyValue != null) readyValue.setText(String.valueOf(readyRooms));
-        if (dirtyValue != null) dirtyValue.setText(String.valueOf(dirtyRooms));
-        if (outOfOrderValue != null) outOfOrderValue.setText(String.valueOf(outOfOrderRooms));
-        if (tasksValue != null) tasksValue.setText(String.valueOf(totalTasks));
+        if (readyValue != null) readyValue.setText(String.valueOf(data.getReadyRooms()));
+        if (dirtyValue != null) dirtyValue.setText(String.valueOf(data.getDirtyRooms()));
+        if (outOfOrderValue != null) outOfOrderValue.setText(String.valueOf(data.getOutOfOrderRooms()));
+        if (tasksValue != null) tasksValue.setText(String.valueOf(data.getTotalTasks()));
     }
 
     private Div createKpiBox(String title, VaadinIcon iconType, java.util.function.Consumer<Span> valueConsumer) {

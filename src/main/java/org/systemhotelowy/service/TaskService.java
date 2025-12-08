@@ -13,6 +13,7 @@ public interface TaskService {
     Optional<Task> findById(Integer id);
     List<Task> findAll();
     List<Task> findByRoomId(Integer roomId);
+    List<Task> findByRoomIds(List<Integer> roomIds);
     List<Task> findByRoomIdAndDate(Integer roomId, LocalDate date);
     List<Task> findByDate(LocalDate date);
     List<Task> findByAssignedToId(Integer userId);

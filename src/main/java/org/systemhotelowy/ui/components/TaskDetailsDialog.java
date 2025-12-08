@@ -5,9 +5,9 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.notification.Notification;
 import org.systemhotelowy.model.Task;
 import org.systemhotelowy.service.TaskService;
+import org.systemhotelowy.utils.NotificationUtils;
 
 /**
  * Dialog wyświetlający szczegóły pojedynczego zadania.
@@ -33,7 +33,7 @@ public class TaskDetailsDialog extends Dialog {
     private void createContent() {
         FormLayout form = new FormLayout();
 
-        // Bezpieczne pobieranie danych (np. obsługa nulli)
+        // Bezpieczne pobieranie danych
         String assignedName = (task.getAssignedTo() != null)
                 ? task.getAssignedTo().getFirstName() + " " + task.getAssignedTo().getLastName()
                 : "Nieprzypisane";
@@ -67,11 +67,11 @@ public class TaskDetailsDialog extends Dialog {
     private void deleteTask() {
         try {
             taskService.deleteById(task.getId());
-            Notification.show("Zadanie usunięte");
+            NotificationUtils.showSuccess("Zadanie usunięte");
             if (onSuccess != null) onSuccess.run();
             close();
         } catch (Exception e) {
-            Notification.show("Błąd: " + e.getMessage());
+            NotificationUtils.showError("Błąd: " + e.getMessage());
         }
     }
 

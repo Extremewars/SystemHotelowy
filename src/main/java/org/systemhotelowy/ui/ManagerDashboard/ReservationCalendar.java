@@ -1,33 +1,25 @@
 package org.systemhotelowy.ui.ManagerDashboard;
 
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.datepicker.DatePicker;
-import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.IntegerField;
-import com.vaadin.flow.component.textfield.NumberField;
-import com.vaadin.flow.component.textfield.TextArea;
-import com.vaadin.flow.component.textfield.TextField;
-import org.systemhotelowy.dto.ReservationRequest;
 import org.systemhotelowy.model.Reservation;
 import org.systemhotelowy.model.ReservationStatus;
 import org.systemhotelowy.model.Room;
 import org.systemhotelowy.service.ReservationService;
 import org.systemhotelowy.service.RoomService;
+import org.systemhotelowy.ui.components.ReservationFormDialog;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.TextStyle;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -147,9 +139,15 @@ public class ReservationCalendar extends VerticalLayout {
                 .findFirst();
 
         if (found.isPresent()) {
-            openReservationEditDialog(found.get());
+            new ReservationFormDialog(found.get(), rooms, reservationService, () -> {
+                loadData();
+                refresh();
+            }).open();
         } else {
-            openReservationDialog(room, day);
+            new ReservationFormDialog(room, day, rooms, reservationService, () -> {
+                loadData();
+                refresh();
+            }).open();
         }
     }
 
@@ -158,186 +156,10 @@ public class ReservationCalendar extends VerticalLayout {
     // ------------------------------------------------------------------------
 
     private void openReservationDialog(Room preselectedRoom, LocalDate preselectedDay) {
-        Dialog dialog = new Dialog();
-        dialog.setWidth("600px");
-        dialog.setHeaderTitle("Dodaj rezerwację");
-
-        FormLayout formLayout = new FormLayout();
-
-        TextField guestNameField = new TextField("Imię i nazwisko gościa");
-        guestNameField.setRequiredIndicatorVisible(true);
-
-        TextField guestEmailField = new TextField("Email gościa");
-
-        TextField phoneField = new TextField("Numer telefonu");
-        phoneField.setRequiredIndicatorVisible(true);
-
-        ComboBox<Room> roomField = new ComboBox<>("Pokój");
-        roomField.setItems(rooms);
-        roomField.setItemLabelGenerator(room -> room.getNumber() + " (max: " + room.getCapacity() + " osób)");
-        roomField.setRequiredIndicatorVisible(true);
-
-        DatePicker checkInField = new DatePicker("Check-in");
-        checkInField.setRequiredIndicatorVisible(true);
-
-        DatePicker checkOutField = new DatePicker("Check-out");
-        checkOutField.setRequiredIndicatorVisible(true);
-
-        IntegerField guestsField = new IntegerField("Liczba gości");
-        guestsField.setValue(1);
-        guestsField.setMin(1);
-        guestsField.setRequiredIndicatorVisible(true);
-
-        NumberField priceField = new NumberField("Całkowita cena (PLN)");
-        priceField.setRequiredIndicatorVisible(true);
-
-        ComboBox<ReservationStatus> statusField = new ComboBox<>("Status");
-        statusField.setItems(ReservationStatus.values());
-        statusField.setValue(ReservationStatus.PENDING);
-        statusField.setItemLabelGenerator(this::formatStatus);
-
-        TextArea notesField = new TextArea("Uwagi");
-
-        if (preselectedRoom != null) roomField.setValue(preselectedRoom);
-        if (preselectedDay != null) {
-            checkInField.setValue(preselectedDay);
-            checkOutField.setValue(preselectedDay.plusDays(1));
-        }
-
-        formLayout.add(guestNameField, guestEmailField, phoneField, roomField,
-                      checkInField, checkOutField, guestsField, priceField, statusField, notesField);
-        formLayout.setResponsiveSteps(
-                new FormLayout.ResponsiveStep("0", 1),
-                new FormLayout.ResponsiveStep("500px", 2)
-        );
-
-        Button saveBtn = new Button("Zapisz", e -> {
-            try {
-                if (roomField.isEmpty() || checkInField.isEmpty() || checkOutField.isEmpty() ||
-                    guestNameField.isEmpty() || phoneField.isEmpty() || priceField.isEmpty()) {
-                    showError("Wypełnij wszystkie wymagane pola");
-                    return;
-                }
-
-                ReservationRequest request = new ReservationRequest();
-                request.setRoomId(roomField.getValue().getId());
-                request.setCheckInDate(checkInField.getValue());
-                request.setCheckOutDate(checkOutField.getValue());
-                request.setGuestName(guestNameField.getValue());
-                request.setGuestEmail(guestEmailField.getValue());
-                request.setGuestPhone(phoneField.getValue());
-                request.setNumberOfGuests(guestsField.getValue());
-                request.setTotalPrice(BigDecimal.valueOf(priceField.getValue()));
-                request.setStatus(statusField.getValue());
-                request.setNotes(notesField.getValue());
-
-                reservationService.create(request);
-                loadData();
-                refresh();
-                dialog.close();
-                showSuccess("Rezerwacja dodana pomyślnie");
-            } catch (Exception ex) {
-                showError("Błąd: " + ex.getMessage());
-            }
-        });
-
-        Button cancelBtn = new Button("Anuluj", e -> dialog.close());
-
-        dialog.add(formLayout);
-        dialog.getFooter().add(cancelBtn, saveBtn);
-        dialog.open();
-    }
-
-    // ------------------------------------------------------------------------
-    // EDIT RESERVATION DIALOG
-    // ------------------------------------------------------------------------
-
-    private void openReservationEditDialog(Reservation reservation) {
-        Dialog dialog = new Dialog();
-        dialog.setWidth("600px");
-        dialog.setHeaderTitle("Edytuj rezerwację");
-
-        FormLayout formLayout = new FormLayout();
-
-        TextField guestNameField = new TextField("Imię i nazwisko gościa", reservation.getGuestName(), "");
-        TextField guestEmailField = new TextField("Email gościa",
-                                                  reservation.getGuestEmail() != null ? reservation.getGuestEmail() : "", "");
-        TextField phoneField = new TextField("Numer telefonu", reservation.getGuestPhone(), "");
-
-        ComboBox<Room> roomField = new ComboBox<>("Pokój");
-        roomField.setItems(rooms);
-        roomField.setItemLabelGenerator(room -> room.getNumber() + " (max: " + room.getCapacity() + " osób)");
-        roomField.setValue(reservation.getRoom());
-
-        DatePicker checkInField = new DatePicker("Check-in", reservation.getCheckInDate());
-        DatePicker checkOutField = new DatePicker("Check-out", reservation.getCheckOutDate());
-
-        IntegerField guestsField = new IntegerField("Liczba gości");
-        guestsField.setMin(0);
-        guestsField.setValue(reservation.getNumberOfGuests());
-
-        NumberField priceField = new NumberField("Całkowita cena");
-        priceField.setValue(reservation.getTotalPrice().doubleValue());
-        priceField.setReadOnly(true);
-        priceField.setSuffixComponent(new Span("PLN"));
-
-        ComboBox<ReservationStatus> statusField = new ComboBox<>("Status");
-        statusField.setItems(ReservationStatus.values());
-        statusField.setValue(reservation.getStatus());
-        statusField.setItemLabelGenerator(this::formatStatus);
-
-        TextArea notesField = new TextArea("Uwagi",
-                                          reservation.getNotes() != null ? reservation.getNotes() : "", "");
-
-        formLayout.add(guestNameField, guestEmailField, phoneField, roomField,
-                      checkInField, checkOutField, guestsField, priceField, statusField, notesField);
-        formLayout.setResponsiveSteps(
-                new FormLayout.ResponsiveStep("0", 1),
-                new FormLayout.ResponsiveStep("500px", 2)
-        );
-
-        Button saveBtn = new Button("Zapisz zmiany", e -> {
-            try {
-                ReservationRequest request = new ReservationRequest();
-                request.setRoomId(roomField.getValue().getId());
-                request.setCheckInDate(checkInField.getValue());
-                request.setCheckOutDate(checkOutField.getValue());
-                request.setGuestName(guestNameField.getValue());
-                request.setGuestEmail(guestEmailField.getValue());
-                request.setGuestPhone(phoneField.getValue());
-                request.setNumberOfGuests(guestsField.getValue());
-                request.setTotalPrice(BigDecimal.valueOf(priceField.getValue()));
-                request.setStatus(statusField.getValue());
-                request.setNotes(notesField.getValue());
-
-                reservationService.update(reservation.getId(), request);
-                loadData();
-                refresh();
-                dialog.close();
-                showSuccess("Rezerwacja zaktualizowana");
-            } catch (Exception ex) {
-                showError("Błąd: " + ex.getMessage());
-            }
-        });
-
-        Button deleteBtn = new Button("Usuń", e -> {
-            try {
-                reservationService.delete(reservation.getId());
-                loadData();
-                refresh();
-                dialog.close();
-                showSuccess("Rezerwacja usunięta");
-            } catch (Exception ex) {
-                showError("Błąd: " + ex.getMessage());
-            }
-        });
-        deleteBtn.getStyle().set("color", "red");
-
-        Button cancelBtn = new Button("Anuluj", e -> dialog.close());
-
-        dialog.add(formLayout);
-        dialog.getFooter().add(cancelBtn, deleteBtn, saveBtn);
-        dialog.open();
+        new ReservationFormDialog(preselectedRoom, preselectedDay, rooms, reservationService, () -> {
+            loadData();
+            refresh();
+        }).open();
     }
 
     private String formatStatus(ReservationStatus status) {
@@ -351,15 +173,6 @@ public class ReservationCalendar extends VerticalLayout {
         }
     }
 
-    private void showError(String message) {
-        Notification notification = Notification.show(message, 3000, Notification.Position.TOP_CENTER);
-        notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
-    }
-
-    private void showSuccess(String message) {
-        Notification notification = Notification.show(message, 2000, Notification.Position.BOTTOM_START);
-        notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-    }
 
 
 
