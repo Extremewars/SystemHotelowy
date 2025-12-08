@@ -9,6 +9,7 @@ import java.util.Optional;
 
 public interface TaskService {
     Task create(Task task);
+    List<Task> createBatch(List<Task> tasks);
     Optional<Task> findById(Integer id);
     List<Task> findAll();
     List<Task> findByRoomId(Integer roomId);
@@ -19,4 +20,5 @@ public interface TaskService {
     void deleteById(Integer id);
     List<UserTaskCountResponse> getTaskCountPerUser();
     boolean canCreateTaskForDate(LocalDate date);
+    boolean canCreateTasksForRoomsAndDate(List<Integer> roomIds, LocalDate date);
 }

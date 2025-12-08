@@ -135,4 +135,46 @@ public class TaskServiceImpl implements TaskService {
         long taskCountForDate = taskRepository.countTasksByDate(date);
         return taskCountForDate < roomCount;
     }
+
+    @Override
+    public List<Task> createBatch(List<Task> tasks) {
+
+        if (tasks == null || tasks.isEmpty()) {
+            return List.of();
+        }
+
+        // Walidacja zadań przed zapisem
+        for (Task task : tasks) {
+            LocalDate taskDate = task.getScheduledAt().toLocalDate();
+            Integer roomId = task.getRoom().getId();
+
+            // Sprawdź czy pokój nie ma już zadania na ten dzień
+            if (!taskRepository.findByRoomIdAndDate(roomId, taskDate).isEmpty()) {
+                throw new IllegalStateException(
+                        "Pokój " + task.getRoom().getNumber() + " ma już zadanie na dzień " + taskDate
+                );
+            }
+        }
+
+        // Zapisz wszystkie zadania (requestedBy powinien być już ustawiony w warstwie UI)
+        return taskRepository.saveAll(tasks);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canCreateTasksForRoomsAndDate(List<Integer> roomIds, LocalDate date) {
+        if (roomIds == null || roomIds.isEmpty()) {
+            return false;
+        }
+
+        // Sprawdź czy któryś z pokoi ma już zadanie na ten dzień
+        for (Integer roomId : roomIds) {
+            List<Task> existingTasks = taskRepository.findByRoomIdAndDate(roomId, date);
+            if (!existingTasks.isEmpty()) {
+                return false; // Pokój ma już zadanie na ten dzień
+            }
+        }
+
+        return true;
+    }
 }

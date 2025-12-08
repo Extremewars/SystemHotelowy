@@ -12,6 +12,8 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinServletRequest;
+import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import org.systemhotelowy.dto.UserRequest;
 import org.systemhotelowy.mapper.UserMapper;
@@ -172,7 +174,7 @@ public class LoginView extends VerticalLayout {
     }
 
     /**
-     * Obsługa logowania przez Spring Security.
+     * Obsługa logowania przez Spring Security i Vaadin.
      */
     private void handleLogin(String email, String password) {
         if (email == null || email.isBlank() || password == null || password.isBlank()) {
@@ -181,11 +183,34 @@ public class LoginView extends VerticalLayout {
         }
 
         try {
-            // Autentykacja przez Spring Security
+            // KROK 1: Autentykacja przez Spring Security
             Authentication auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, password)
             );
+            
+            // KROK 2: Ustaw w SecurityContextHolder (dla Spring Security)
             SecurityContextHolder.getContext().setAuthentication(auth);
+            
+            // KROK 3: Ustaw w sesji HTTP (dla Vaadin)
+            VaadinServletRequest request = VaadinServletRequest.getCurrent();
+            if (request != null && request.getHttpServletRequest() != null) {
+                // Zapisz SecurityContext w sesji HTTP - to kluczowe dla Vaadin!
+                request.getHttpServletRequest().getSession().setAttribute(
+                    "SPRING_SECURITY_CONTEXT", 
+                    SecurityContextHolder.getContext()
+                );
+                System.out.println("DEBUG: Zapisano SecurityContext w sesji HTTP dla użytkownika: " + email);
+            } else {
+                System.err.println("WARN: VaadinServletRequest lub HttpServletRequest jest null!");
+            }
+            
+            // KROK 4: Cache użytkownika w VaadinSession (bezpośrednie rozwiązanie)
+            userService.findByEmail(email).ifPresent(user -> {
+                if (VaadinSession.getCurrent() != null) {
+                    VaadinSession.getCurrent().setAttribute(User.class, user);
+                    System.out.println("DEBUG: Zapisano użytkownika w VaadinSession: " + user.getEmail());
+                }
+            });
             
             showSuccess("Zalogowano pomyślnie!");
             securityHelper.navigateToDashboard();
