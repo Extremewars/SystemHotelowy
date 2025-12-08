@@ -68,7 +68,7 @@ public class TaskPanel extends VerticalLayout {
 
         add(topBar, taskGrid);
         
-        // Załaduj zadania użytkownika (MUSI BYĆ PO inicjalizacji taskGrid!)
+        // Załaduj zadania użytkownika
         loadMyTasks();
     }
 

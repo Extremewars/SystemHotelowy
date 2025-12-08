@@ -33,7 +33,7 @@ public class TaskDetailsDialog extends Dialog {
     private void createContent() {
         FormLayout form = new FormLayout();
 
-        // Bezpieczne pobieranie danych (np. obsługa nulli)
+        // Bezpieczne pobieranie danych
         String assignedName = (task.getAssignedTo() != null)
                 ? task.getAssignedTo().getFirstName() + " " + task.getAssignedTo().getLastName()
                 : "Nieprzypisane";

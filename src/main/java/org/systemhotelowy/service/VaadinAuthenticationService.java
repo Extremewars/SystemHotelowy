@@ -42,18 +42,17 @@ public class VaadinAuthenticationService {
      */
     public boolean login(String email, String password) {
         try {
-            // KROK 1: Autentykacja przez Spring Security
+            // Autentykacja przez Spring Security
             Authentication auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, password)
             );
             
-            // KROK 2: Ustaw w SecurityContextHolder (dla Spring Security)
+            // Ustaw w SecurityContextHolder (dla Spring Security)
             SecurityContextHolder.getContext().setAuthentication(auth);
             
-            // KROK 3: Ustaw w sesji HTTP (dla Vaadin)
+            // Ustaw w sesji HTTP (dla Vaadin)
             VaadinServletRequest request = VaadinServletRequest.getCurrent();
             if (request != null && request.getHttpServletRequest() != null) {
-                // Zapisz SecurityContext w sesji HTTP - to kluczowe dla Vaadin!
                 request.getHttpServletRequest().getSession().setAttribute(
                     "SPRING_SECURITY_CONTEXT", 
                     SecurityContextHolder.getContext()
@@ -61,7 +60,7 @@ public class VaadinAuthenticationService {
                 log.debug("Zapisano SecurityContext w sesji HTTP dla użytkownika: {}", email);
             }
             
-            // KROK 4: Cache użytkownika w VaadinSession
+            // Cache użytkownika w VaadinSession
             userService.findByEmail(email).ifPresent(user -> {
                 if (VaadinSession.getCurrent() != null) {
                     VaadinSession.getCurrent().setAttribute(User.class, user);
@@ -81,7 +80,7 @@ public class VaadinAuthenticationService {
      * Próbuje po kolei przez: cache w VaadinSession, AuthenticationContext, SecurityContextHolder.
      */
     public Optional<User> getAuthenticatedUser() {
-        // Próba 0: Cache w VaadinSession (najszybsza)
+        // Próba 0: Cache w VaadinSession
         if (VaadinSession.getCurrent() != null) {
             User cachedUser = VaadinSession.getCurrent().getAttribute(User.class);
             if (cachedUser != null) {
@@ -90,7 +89,7 @@ public class VaadinAuthenticationService {
             }
         }
         
-        // Próba 1: Użyj AuthenticationContext z Vaadin (preferowana metoda)
+        // Próba 1: Użyj AuthenticationContext z Vaadin
         Optional<User> user = authenticationContext.getAuthenticatedUser(UserDetails.class)
                 .flatMap(userDetails -> {
                     log.debug("Znaleziono użytkownika przez AuthenticationContext: {}", userDetails.getUsername());

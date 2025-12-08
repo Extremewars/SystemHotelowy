@@ -85,14 +85,14 @@ public class RoomGrid extends Grid<Room> {
     // --- ŁADOWANIE DANYCH ---
 
     public void setRooms(List<Room> allRooms, RoomStatus statusFilter, String searchFilter) {
-        // 1. Filtrowanie
+        // Filtrowanie
         List<Room> filtered = allRooms.stream()
                 .filter(r -> statusFilter == null || r.getRoomStatus() == statusFilter)
                 .filter(r -> searchFilter == null || searchFilter.isBlank() ||
                         r.getNumber().toLowerCase().contains(searchFilter.trim().toLowerCase()))
                 .collect(Collectors.toList());
 
-        // 2. Pobranie tasków dla przefiltrowanych pokoi (Batch fetching)
+        // Pobranie tasków dla przefiltrowanych pokoi (Batch fetching)
         tasksCache.clear();
         if (!filtered.isEmpty()) {
             List<Integer> roomIds = filtered.stream()

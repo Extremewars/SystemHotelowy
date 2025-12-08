@@ -162,10 +162,6 @@ public class ReservationCalendar extends VerticalLayout {
         }).open();
     }
 
-    // ------------------------------------------------------------------------
-    // EDIT RESERVATION DIALOG - REMOVED (Handled by ReservationFormDialog)
-    // ------------------------------------------------------------------------
-
     private String formatStatus(ReservationStatus status) {
         switch (status) {
             case PENDING: return "Oczekująca";
