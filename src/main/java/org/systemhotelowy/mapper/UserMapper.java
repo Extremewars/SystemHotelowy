@@ -10,7 +10,7 @@ public class UserMapper {
 
     public User toEntity(UserRequest request) {
         if (request == null) {
-            return null;
+            throw new IllegalArgumentException("UserRequest nie może być nullem");
         }
         
         User user = new User();
@@ -25,7 +25,7 @@ public class UserMapper {
 
     public UserResponse toResponse(User user) {
         if (user == null) {
-            return null;
+            throw new IllegalArgumentException("UserResponse nie może być nullem");
         }
         
         UserResponse response = new UserResponse();

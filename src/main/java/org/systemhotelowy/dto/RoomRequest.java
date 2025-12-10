@@ -15,7 +15,6 @@ public class RoomRequest {
 
     @NotBlank(message = "Numer pokoju nie może być pusty")
     private String number;
-
     private Integer floor;
 
     @NotNull(message = "Typ pokoju jest wymagany")

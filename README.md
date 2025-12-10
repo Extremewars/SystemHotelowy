@@ -20,6 +20,22 @@ Aby uruchomić bazę danych, należy wykonać polecenie w katalogu głównym pro
 docker-compose up -d
 ```
 
+### Przeglądanie bazy danych
+Aby zobaczyć zawartość bazy danych w kontenerze Docker, można użyć tego polecenia w terminalu:
+
+```bash
+docker exec -it hotel-mysql mysql -u root -p
+```
+Domyślne hasło dla użykownika root to `rootpass`. 
+Domyślna nazwa bazy danych to `hotel`. 
+Powinny występować tabele o nazwach `users`, `rooms`, `reservations`, `tasks`.
+Po zalogowaniu do MySQL można wykonywać zapytania SQL, takie jak:
+```bash
+USE hotel; #przełącza na bazę danych hotel
+SHOW tables; #wyświetla listę tabel w bazie danych
+SELECT * FROM users; #wyświetla zawartość tabeli users
+```
+
 ### Dane dostępowe (konfigurowalne w `docker-compose.yml`):
 - **Host**: `localhost`
 - **Port**: `3306`
@@ -52,6 +68,9 @@ Poniżej znajduje się opis struktury katalogów i kluczowych plików w aplikacj
             - `VaadinSecurityConfig`
         - Inicjalizacja danych
             - `DataInitializer`
+        - Konfiguracja Swaggera
+            - `OpenApiConfig`
+    - **`controller`** - Kontrolery REST obsługujące żądania HTTP
     - **`dto`** - Obiekty transferu danych (Data Transfer Objects), służące do przesyłania danych między warstwami.
     - **`model`** - Encje JPA reprezentujące tabele w bazie danych (główne modele: `Room`, `Task`, `User`, `Reservation`).
     - **`repository`** - Interfejsy repozytoriów Spring Data JPA do komunikacji z bazą danych.

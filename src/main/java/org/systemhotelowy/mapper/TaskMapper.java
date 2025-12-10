@@ -21,7 +21,7 @@ public class TaskMapper {
 
     public Task toEntity(TaskRequest request, User assignedTo, User requestedBy, Room room) {
         if (request == null) {
-            return null;
+            throw new IllegalArgumentException("TaskRequest nie może być nullem");
         }
 
         Task task = new Task();
@@ -39,7 +39,7 @@ public class TaskMapper {
 
     public TaskResponse toResponse(Task task) {
         if (task == null) {
-            return null;
+            throw new IllegalArgumentException("TaskResponse nie może być nullem");
         }
 
         TaskResponse response = new TaskResponse();

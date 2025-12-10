@@ -67,25 +67,37 @@ public class RoomController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Operation(summary = "Aktualizuj pokój", description = "Aktualizuje dane pokoju. Wymaga roli ADMIN lub MANAGER.")
     public ResponseEntity<RoomResponse> update(@PathVariable Integer id, @Valid @RequestBody RoomRequest request) {
-        Room toUpdate = roomMapper.toEntity(request);
-        toUpdate.setId(id);
-        Room updated = roomService.update(toUpdate);
-        return ResponseEntity.ok(roomMapper.toResponse(updated));
+        try {
+            Room toUpdate = roomMapper.toEntity(request);
+            toUpdate.setId(id);
+            Room updated = roomService.update(toUpdate);
+            return ResponseEntity.ok(roomMapper.toResponse(updated));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'CLEANER')")
     @Operation(summary = "Zmień status pokoju", description = "Aktualizuje status pokoju (np. DIRTY, CLEANING, READY). Dostępne dla ADMIN, MANAGER i CLEANER.")
     public ResponseEntity<RoomResponse> updateStatus(@PathVariable Integer id, @Valid @RequestBody RoomStatusRequest request) {
-        Room updated = roomService.updateStatus(id, request.getRoomStatus());
-        return ResponseEntity.ok(roomMapper.toResponse(updated));
+        try {
+            Room updated = roomService.updateStatus(id, request.getRoomStatus());
+            return ResponseEntity.ok(roomMapper.toResponse(updated));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Usuń pokój", description = "Usuwa pokój o podanym ID. Wymaga roli ADMIN.")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
-        roomService.deleteById(id);
-        return ResponseEntity.noContent().build();
+        try {
+            roomService.deleteById(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

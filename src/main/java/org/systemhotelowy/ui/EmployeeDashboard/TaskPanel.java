@@ -72,13 +72,6 @@ public class TaskPanel extends VerticalLayout {
         loadMyTasks();
     }
 
-    /**
-     * Publiczna metoda do odświeżania danych z bazy - używana przez automatyczne odświeżanie.
-     */
-    public void refreshData() {
-        loadMyTasks();
-    }
-
     private void loadMyTasks() {
         User currentUser = authService.getAuthenticatedUser().orElse(null);
         if (currentUser != null) {

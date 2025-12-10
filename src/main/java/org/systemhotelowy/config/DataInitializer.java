@@ -15,7 +15,7 @@ public class DataInitializer {
     CommandLineRunner initAdmin(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         return args -> {
             if (userRepository.findByEmail("admin@local.com").isEmpty()) {
-                User admin = new User(null, "System", "Administrator", "admin@local.com",
+                User admin = new User("System", "Administrator", "admin@local.com",
                         passwordEncoder.encode("admin123!"), Role.ADMIN);
                 userRepository.save(admin);
                 System.out.println("Admin user created: admin@local.com / admin123!");

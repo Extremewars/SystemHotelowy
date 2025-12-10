@@ -102,8 +102,7 @@ public class ReservationFormDialog extends Dialog {
         if (!isNew && reservation.getTotalPrice() != null) {
             priceField.setValue(reservation.getTotalPrice().doubleValue());
             // In edit mode, price might be read-only or editable depending on requirements.
-            // The original code had it read-only in edit mode.
-            priceField.setReadOnly(true); 
+            priceField.setReadOnly(true);
         }
         priceField.setSuffixComponent(new Span("PLN"));
 
@@ -141,39 +140,27 @@ public class ReservationFormDialog extends Dialog {
         }
 
         try {
+            ReservationRequest request = new ReservationRequest();
+            request.setRoomId(roomField.getValue().getId());
+            request.setCheckInDate(checkInField.getValue());
+            request.setCheckOutDate(checkOutField.getValue());
+            request.setGuestName(guestNameField.getValue());
+            request.setGuestEmail(guestEmailField.getValue());
+            request.setGuestPhone(phoneField.getValue());
+            request.setNumberOfGuests(guestsField.getValue());
+            request.setStatus(statusField.getValue());
+            request.setNotes(notesField.getValue());
             if (isNew) {
-                ReservationRequest request = new ReservationRequest();
-                request.setRoomId(roomField.getValue().getId());
-                request.setCheckInDate(checkInField.getValue());
-                request.setCheckOutDate(checkOutField.getValue());
-                request.setGuestName(guestNameField.getValue());
-                request.setGuestEmail(guestEmailField.getValue());
-                request.setGuestPhone(phoneField.getValue());
-                request.setNumberOfGuests(guestsField.getValue());
                 request.setTotalPrice(BigDecimal.valueOf(priceField.getValue()));
-                request.setStatus(statusField.getValue());
-                request.setNotes(notesField.getValue());
-
                 reservationService.create(request);
                 NotificationUtils.showSuccess("Rezerwacja dodana pomyślnie");
             } else {
-                ReservationRequest request = new ReservationRequest();
-                request.setRoomId(roomField.getValue().getId());
-                request.setCheckInDate(checkInField.getValue());
-                request.setCheckOutDate(checkOutField.getValue());
-                request.setGuestName(guestNameField.getValue());
-                request.setGuestEmail(guestEmailField.getValue());
-                request.setGuestPhone(phoneField.getValue());
-                request.setNumberOfGuests(guestsField.getValue());
                 // Price is read-only in edit, but we should pass it if needed, or keep original
                 if (priceField.getValue() != null) {
                     request.setTotalPrice(BigDecimal.valueOf(priceField.getValue()));
                 } else {
                     request.setTotalPrice(reservation.getTotalPrice());
                 }
-                request.setStatus(statusField.getValue());
-                request.setNotes(notesField.getValue());
-                
                 reservationService.update(reservation.getId(), request);
                 NotificationUtils.showSuccess("Rezerwacja zaktualizowana");
             }

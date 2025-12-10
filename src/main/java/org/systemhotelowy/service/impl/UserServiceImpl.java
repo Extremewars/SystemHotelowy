@@ -59,11 +59,18 @@ public class UserServiceImpl implements UserService {
         User existing = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("User with id " + id + " not found."));
 
-        existing.setFirstName(user.getFirstName());
-        existing.setLastName(user.getLastName());
-        existing.setEmail(user.getEmail());
-        existing.setRole(user.getRole());
-
+        if (user.getFirstName() != null) {
+            existing.setFirstName(user.getFirstName());
+        }
+        if (user.getLastName() != null) {
+            existing.setLastName(user.getLastName());
+        }
+        if (user.getEmail() != null) {
+            existing.setEmail(user.getEmail());
+        }
+        if (user.getRole() != null) {
+            existing.setRole(user.getRole());
+        }
         if (user.getPassword() != null && !user.getPassword().isBlank()) {
             existing.setPassword(passwordEncoder.encode(user.getPassword()));
         }

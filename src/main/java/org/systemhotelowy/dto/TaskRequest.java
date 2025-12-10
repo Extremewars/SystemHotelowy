@@ -14,12 +14,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TaskRequest {
-
     @NotBlank(message = "Opis zadania nie może być pusty")
     private String description;
 
     private String remarks;
-
     private TaskStatus status;
 
     @NotNull(message = "Data zaplanowania jest wymagana")
@@ -30,7 +28,6 @@ public class TaskRequest {
     private Integer durationInMinutes;
 
     private Integer assignedToId;
-
     private Integer requestedById;
 
     @NotNull(message = "ID pokoju jest wymagane")

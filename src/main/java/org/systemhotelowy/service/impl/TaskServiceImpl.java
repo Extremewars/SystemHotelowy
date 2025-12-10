@@ -4,7 +4,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.systemhotelowy.dto.UserTaskCountResponse;
 import org.systemhotelowy.model.Task;
-import org.systemhotelowy.model.User;
 import org.systemhotelowy.repository.RoomRepository;
 import org.systemhotelowy.repository.TaskRepository;
 import org.systemhotelowy.repository.UserRepository;
@@ -122,16 +121,13 @@ public class TaskServiceImpl implements TaskService {
             Integer userId = (Integer) result[0];
             Long count = (Long) result[1];
 
-            User user = userRepository.findById(userId).orElse(null);
-            if (user != null) {
-                responses.add(new UserTaskCountResponse(
-                        user.getId(),
-                        user.getFirstName(),
-                        user.getLastName(),
-                        user.getEmail(),
-                        count
-                ));
-            }
+            userRepository.findById(userId).ifPresent(user -> responses.add(new UserTaskCountResponse(
+                    user.getId(),
+                    user.getFirstName(),
+                    user.getLastName(),
+                    user.getEmail(),
+                    count
+            )));
         }
 
         return responses;

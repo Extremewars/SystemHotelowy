@@ -33,10 +33,16 @@ public class ReservationController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Operation(summary = "Utwórz nową rezerwację", description = "Tworzy nową rezerwację pokoju. Wymaga roli ADMIN lub MANAGER.")
-    public ResponseEntity<ReservationResponse> create(@Valid @RequestBody ReservationRequest request) {
-        var created = reservationService.create(request);
-        return ResponseEntity.created(URI.create("/api/reservations/" + created.getId()))
-                .body(reservationService.toResponse(created));
+    public ResponseEntity<?> create(@Valid @RequestBody ReservationRequest request) {
+        try {
+            var created = reservationService.create(request);
+            return ResponseEntity.created(URI.create("/api/reservations/" + created.getId()))
+                    .body(reservationService.toResponse(created));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping

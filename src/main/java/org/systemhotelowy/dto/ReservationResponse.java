@@ -16,30 +16,17 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReservationResponse {
-    
     private Integer id;
-    
     private Integer roomId;
-    
     private String roomNumber;
-    
     private LocalDate checkInDate;
-    
     private LocalDate checkOutDate;
-    
     private String guestName;
-    
     private String guestEmail;
-    
     private String guestPhone;
-    
     private Integer numberOfGuests;
-    
     private BigDecimal totalPrice;
-    
     private ReservationStatus status;
-    
     private String notes;
-    
     private LocalDateTime createdAt;
 }

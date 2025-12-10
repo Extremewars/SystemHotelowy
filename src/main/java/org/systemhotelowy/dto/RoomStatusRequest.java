@@ -10,7 +10,6 @@ import org.systemhotelowy.model.RoomStatus;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RoomStatusRequest {
-
     @NotNull(message = "Status pokoju jest wymagany")
     private RoomStatus roomStatus;
 }

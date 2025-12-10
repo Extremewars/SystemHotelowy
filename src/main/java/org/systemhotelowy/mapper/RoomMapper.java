@@ -10,7 +10,7 @@ public class RoomMapper {
 
     public Room toEntity(RoomRequest request) {
         if (request == null) {
-            return null;
+            throw new IllegalArgumentException("RoomRequest nie może być nullem");
         }
 
         Room room = new Room();
@@ -25,7 +25,7 @@ public class RoomMapper {
 
     public RoomResponse toResponse(Room room) {
         if (room == null) {
-            return null;
+            throw new IllegalArgumentException("RoomResponse nie może być nullem");
         }
 
         RoomResponse response = new RoomResponse();

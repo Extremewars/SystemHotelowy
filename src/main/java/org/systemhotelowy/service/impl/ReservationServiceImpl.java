@@ -161,7 +161,7 @@ public class ReservationServiceImpl implements ReservationService {
         if (excludeReservationId != null) {
             overlapping = overlapping.stream()
                     .filter(r -> !r.getId().equals(excludeReservationId))
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         return overlapping.isEmpty();

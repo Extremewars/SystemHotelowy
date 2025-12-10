@@ -1,5 +1,8 @@
 package org.systemhotelowy.dto;
 
+import lombok.Getter;
+
+@Getter
 public class ManagerKpiData {
     private long readyRooms;
     private long dirtyRooms;
@@ -13,8 +16,4 @@ public class ManagerKpiData {
         this.totalTasks = totalTasks;
     }
 
-    public long getReadyRooms() { return readyRooms; }
-    public long getDirtyRooms() { return dirtyRooms; }
-    public long getOutOfOrderRooms() { return outOfOrderRooms; }
-    public long getTotalTasks() { return totalTasks; }
 }

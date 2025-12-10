@@ -3,7 +3,6 @@ package org.systemhotelowy.ui.components;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -30,11 +29,12 @@ public class DashboardTopBar extends VerticalLayout {
         setMargin(false);
 
         H1 titleLabel = new H1(title);
-        
-        User user = authService.getAuthenticatedUser().orElse(null);
-        String userEmail = user != null ? user.getEmail() : "Nieznany użytkownik";
+
+        String userEmail = authService.getAuthenticatedUser()
+                .map(User::getEmail)
+                .orElse("Nieznany użytkownik");
         Span loggedUser = new Span("Zalogowano jako: " + userEmail);
-        
+
         Button logoutBtn = new Button("Wyloguj", e -> {
             securityHelper.logout();
             NotificationUtils.showSuccess("Wylogowano!");

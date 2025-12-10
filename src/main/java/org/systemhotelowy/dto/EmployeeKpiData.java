@@ -1,5 +1,8 @@
 package org.systemhotelowy.dto;
 
+import lombok.Getter;
+
+@Getter
 public class EmployeeKpiData {
     private long readyRooms;
     private long dirtyRooms;
@@ -13,8 +16,4 @@ public class EmployeeKpiData {
         this.myPendingTasks = myPendingTasks;
     }
 
-    public long getReadyRooms() { return readyRooms; }
-    public long getDirtyRooms() { return dirtyRooms; }
-    public long getMyTasks() { return myTasks; }
-    public long getMyPendingTasks() { return myPendingTasks; }
 }
