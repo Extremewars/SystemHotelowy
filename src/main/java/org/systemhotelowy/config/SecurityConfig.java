@@ -18,14 +18,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.systemhotelowy.service.JwtService;
 import org.systemhotelowy.utils.JwtAuthenticationFilter;
 
-/**
- * Konfiguracja security dla REST API (stateless JWT authentication).
- * Vaadin używa osobnej konfiguracji w VaadinSecurityConfig.
- */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
+
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
 
@@ -57,10 +54,16 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        // otwarte endpointy autoryzacji
                         .requestMatchers(
                                 "/auth/login",
                                 "/auth/register"
                         ).permitAll()
+
+                        // >>> OTWIERAMY RAPORTY XML <<<
+                        .requestMatchers("/api/reports/**").permitAll()
+
+                        // pozostałe endpointy API wymagają JWT
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
