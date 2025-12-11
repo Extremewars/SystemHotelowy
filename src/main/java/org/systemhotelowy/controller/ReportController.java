@@ -33,7 +33,20 @@ public class ReportController {
     )
     @Operation(
             summary = "Get daily hotel report as XML",
-            description = "Returns XML report with rooms, tasks and reservations for given date."
+            description = "Returns XML report with rooms, tasks and reservations for given date.",
+            responses = {
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "200",
+                            description = "XML Report",
+                            content = @io.swagger.v3.oas.annotations.media.Content(
+                                    mediaType = MediaType.APPLICATION_XML_VALUE,
+                                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                                            type = "string",
+                                            format = "binary"
+                                    )
+                            )
+                    )
+            }
     )
     public ResponseEntity<byte[]> getDailyXmlReport(
             @RequestParam("date")
@@ -64,16 +77,22 @@ public class ReportController {
     )
     @Operation(
             summary = "Import daily hotel report from XML",
-            description = "Validates XML against XSD schema and returns summary of imported data."
+            description = "Validates XML against XSD schema and returns summary of imported data.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "XML file content",
+                    content = @io.swagger.v3.oas.annotations.media.Content(
+                            mediaType = MediaType.APPLICATION_XML_VALUE,
+                            schema = @io.swagger.v3.oas.annotations.media.Schema(
+                                    type = "string",
+                                    format = "binary"
+                            )
+                    )
+            )
     )
     public ResponseEntity<?> importDailyXml(
             @RequestBody byte[] xmlBytes
     ) {
-        try {
-            HotelReportImportSummaryDto dto = xmlService.importDailyReport(xmlBytes);
-            return ResponseEntity.ok(dto);
-        } catch (IllegalStateException ex) {
-            return ResponseEntity.badRequest().build();
-        }
+        HotelReportImportSummaryDto dto = xmlService.importDailyReport(xmlBytes);
+        return ResponseEntity.ok(dto);
     }
 }

@@ -54,42 +54,36 @@ public class TaskController {
     @Operation(summary = "Utwórz nowe zadanie",
             description = "Tworzy nowe zadanie. Walidacja: maksymalnie tyle tasków na dzień ile pokoi. Wymaga roli ADMIN lub MANAGER.")
     public ResponseEntity<?> create(@Valid @RequestBody TaskRequest request) {
-        try {
-            User assignedTo = null;
-            User requestedBy = null;
+        User assignedTo = null;
+        User requestedBy = null;
 
-            if (request.getAssignedToId() != null) {
-                assignedTo = userService.findById(request.getAssignedToId())
-                        .orElseThrow(() -> new IllegalArgumentException("Użytkownik o ID " + request.getAssignedToId() + " nie istnieje."));
-            }
-
-            // Jeśli nie podano requestedById, użyj aktualnie zalogowanego użytkownika
-            if (request.getRequestedById() != null) {
-                requestedBy = userService.findById(request.getRequestedById())
-                        .orElseThrow(() -> new IllegalArgumentException("Użytkownik o ID " + request.getRequestedById() + " nie istnieje."));
-            } else {
-                // Automatycznie ustaw aktualnie zalogowanego użytkownika jako requestedBy
-                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-                if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
-                    UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-                    requestedBy = userService.findByEmail(userDetails.getUsername())
-                            .orElse(null);
-                }
-            }
-
-            Room room = roomService.findById(request.getRoomId())
-                    .orElseThrow(() -> new IllegalArgumentException("Pokój o ID " + request.getRoomId() + " nie istnieje."));
-
-            Task task = taskMapper.toEntity(request, assignedTo, requestedBy, room);
-            Task created = taskService.create(task);
-
-            return ResponseEntity.created(URI.create("/api/tasks/" + created.getId()))
-                    .body(taskMapper.toResponse(created));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(409).body(e.getMessage());
+        if (request.getAssignedToId() != null) {
+            assignedTo = userService.findById(request.getAssignedToId())
+                    .orElseThrow(() -> new IllegalArgumentException("Użytkownik o ID " + request.getAssignedToId() + " nie istnieje."));
         }
+
+        // Jeśli nie podano requestedById, użyj aktualnie zalogowanego użytkownika
+        if (request.getRequestedById() != null) {
+            requestedBy = userService.findById(request.getRequestedById())
+                    .orElseThrow(() -> new IllegalArgumentException("Użytkownik o ID " + request.getRequestedById() + " nie istnieje."));
+        } else {
+            // Automatycznie ustaw aktualnie zalogowanego użytkownika jako requestedBy
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
+                UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+                requestedBy = userService.findByEmail(userDetails.getUsername())
+                        .orElse(null);
+            }
+        }
+
+        Room room = roomService.findById(request.getRoomId())
+                .orElseThrow(() -> new IllegalArgumentException("Pokój o ID " + request.getRoomId() + " nie istnieje."));
+
+        Task task = taskMapper.toEntity(request, assignedTo, requestedBy, room);
+        Task created = taskService.create(task);
+
+        return ResponseEntity.created(URI.create("/api/tasks/" + created.getId()))
+                .body(taskMapper.toResponse(created));
     }
 
     @GetMapping

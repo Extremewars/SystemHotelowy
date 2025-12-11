@@ -4,6 +4,7 @@ package org.systemhotelowy.service.impl;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.systemhotelowy.exception.ResourceNotFoundException;
 import org.systemhotelowy.model.User;
 import org.systemhotelowy.repository.UserRepository;
 import org.systemhotelowy.service.UserService;
@@ -57,7 +58,7 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("User id must not be null for update.");
         }
         User existing = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("User with id " + id + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found."));
 
         if (user.getFirstName() != null) {
             existing.setFirstName(user.getFirstName());
@@ -80,6 +81,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteById(Integer id) {
+        if (!userRepository.existsById(id)) {
+            throw new ResourceNotFoundException("User with id " + id + " not found.");
+        }
         userRepository.deleteById(id);
     }
 }

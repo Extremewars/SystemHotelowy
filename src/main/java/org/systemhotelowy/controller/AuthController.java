@@ -47,17 +47,12 @@ public class AuthController {
     @PostMapping("/login")
     @Operation(summary = "Logowanie", description = "Uwierzytelnia użytkownika i zwraca token JWT.")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
-        Authentication auth;
-        try {
-            auth = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequest.getEmail(),
-                            loginRequest.getPassword()
-                    )
-            );
-        } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Niepoprawne dane");
-        }
+        Authentication auth = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        loginRequest.getEmail(),
+                        loginRequest.getPassword()
+                )
+        );
         UserDetails userDetails = (UserDetails) auth.getPrincipal();
         String jwt = jwtService.generateToken(userDetails);
 

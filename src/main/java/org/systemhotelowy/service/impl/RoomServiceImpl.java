@@ -2,6 +2,7 @@ package org.systemhotelowy.service.impl;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.systemhotelowy.exception.ResourceNotFoundException;
 import org.systemhotelowy.model.Room;
 import org.systemhotelowy.model.RoomStatus;
 import org.systemhotelowy.repository.RoomRepository;
@@ -50,7 +51,7 @@ public class RoomServiceImpl implements RoomService {
             throw new IllegalArgumentException("Room id must not be null for update.");
         }
         Room existing = roomRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Room with id " + id + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Room with id " + id + " not found."));
 
         existing.setNumber(room.getNumber());
         existing.setFloor(room.getFloor());
@@ -63,13 +64,16 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     public void deleteById(Integer id) {
+        if (!roomRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Room with id " + id + " not found.");
+        }
         roomRepository.deleteById(id);
     }
 
     @Override
     public Room updateStatus(Integer id, RoomStatus status) {
         Room room = roomRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Room with id " + id + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Room with id " + id + " not found."));
         room.setRoomStatus(status);
         return roomRepository.save(room);
     }

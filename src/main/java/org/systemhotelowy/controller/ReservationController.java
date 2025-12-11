@@ -34,15 +34,9 @@ public class ReservationController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Operation(summary = "Utwórz nową rezerwację", description = "Tworzy nową rezerwację pokoju. Wymaga roli ADMIN lub MANAGER.")
     public ResponseEntity<?> create(@Valid @RequestBody ReservationRequest request) {
-        try {
-            var created = reservationService.create(request);
-            return ResponseEntity.created(URI.create("/api/reservations/" + created.getId()))
-                    .body(reservationService.toResponse(created));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        var created = reservationService.create(request);
+        return ResponseEntity.created(URI.create("/api/reservations/" + created.getId()))
+                .body(reservationService.toResponse(created));
     }
 
     @GetMapping
@@ -56,12 +50,8 @@ public class ReservationController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Operation(summary = "Pobierz rezerwację po ID", description = "Zwraca szczegóły rezerwacji o podanym ID.")
     public ResponseEntity<ReservationResponse> getById(@PathVariable Integer id) {
-        try {
-            var reservation = reservationService.findById(id);
-            return ResponseEntity.ok(reservationService.toResponse(reservation));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        var reservation = reservationService.findById(id);
+        return ResponseEntity.ok(reservationService.toResponse(reservation));
     }
 
     @GetMapping("/room/{roomId}")

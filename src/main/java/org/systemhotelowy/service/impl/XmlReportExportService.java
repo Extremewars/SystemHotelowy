@@ -73,7 +73,7 @@ public class XmlReportExportService implements ReportExportService {
             return summary;
         } catch (Exception e) {
             log.error("Failed to import XML daily report", e);
-            throw new IllegalStateException("Could not import XML daily report", e);
+            throw new IllegalArgumentException("Could not import XML daily report", e);
         }
     }
 

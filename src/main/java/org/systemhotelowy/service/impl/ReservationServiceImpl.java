@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.systemhotelowy.dto.ReservationRequest;
 import org.systemhotelowy.dto.ReservationResponse;
+import org.systemhotelowy.exception.ResourceNotFoundException;
 import org.systemhotelowy.mapper.ReservationMapper;
 import org.systemhotelowy.model.Reservation;
 import org.systemhotelowy.model.ReservationStatus;
@@ -56,7 +57,7 @@ public class ReservationServiceImpl implements ReservationService {
     @Transactional(readOnly = true)
     public Reservation findById(Integer id) {
         return reservationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Rezerwacja nie znaleziona: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Rezerwacja nie znaleziona: " + id));
     }
 
     @Override
@@ -96,7 +97,7 @@ public class ReservationServiceImpl implements ReservationService {
 
         // Sprawdź czy pokój istnieje
         Room room = roomRepository.findById(request.getRoomId())
-                .orElseThrow(() -> new RuntimeException("Pokój nie znaleziony: " + request.getRoomId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Pokój nie znaleziony: " + request.getRoomId()));
 
         // liczba gości ≤ pojemność pokoju
         validateGuestCount(request, room);

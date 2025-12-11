@@ -60,25 +60,17 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN') or @userSecurity.isOwner(authentication, #id)")
     @Operation(summary = "Aktualizuj użytkownika", description = "Aktualizuje dane użytkownika. Dostępne dla ADMIN lub właściciela konta.")
     public ResponseEntity<UserResponse> update(@PathVariable Integer id, @Valid @RequestBody UserRequest request) {
-        try {
-            User toUpdate = userMapper.toEntity(request);
-            toUpdate.setId(id);
-            User updated = userService.update(toUpdate);
-            return ResponseEntity.ok(userMapper.toResponse(updated));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        User toUpdate = userMapper.toEntity(request);
+        toUpdate.setId(id);
+        User updated = userService.update(toUpdate);
+        return ResponseEntity.ok(userMapper.toResponse(updated));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Usuń użytkownika", description = "Usuwa użytkownika o podanym ID. Wymaga roli ADMIN.")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
-        try {
-            userService.deleteById(id);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        userService.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 }
