@@ -37,7 +37,7 @@ public class EmployeeDashboard extends VerticalLayout {
         this.roomService = roomService;
         this.taskService = taskService;
         this.dashboardService = dashboardService;
-        
+
         setSizeFull();
         setPadding(true);
         setSpacing(true);

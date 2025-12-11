@@ -115,7 +115,7 @@ public class ReservationFormDialog extends Dialog {
         if (!isNew && reservation.getNotes() != null) notesField.setValue(reservation.getNotes());
 
         formLayout.add(guestNameField, guestEmailField, phoneField, roomField,
-                      checkInField, checkOutField, guestsField, priceField, statusField, notesField);
+                checkInField, checkOutField, guestsField, priceField, statusField, notesField);
         formLayout.setResponsiveSteps(
                 new FormLayout.ResponsiveStep("0", 1),
                 new FormLayout.ResponsiveStep("500px", 2)
@@ -134,7 +134,7 @@ public class ReservationFormDialog extends Dialog {
 
     private void save() {
         if (roomField.isEmpty() || checkInField.isEmpty() || checkOutField.isEmpty() ||
-            guestNameField.isEmpty() || phoneField.isEmpty() || priceField.isEmpty()) {
+                guestNameField.isEmpty() || phoneField.isEmpty() || priceField.isEmpty()) {
             NotificationUtils.showError("Wypełnij wszystkie wymagane pola");
             return;
         }

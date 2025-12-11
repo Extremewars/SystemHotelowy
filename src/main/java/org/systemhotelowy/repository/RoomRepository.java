@@ -7,5 +7,6 @@ import java.util.Optional;
 
 public interface RoomRepository extends JpaRepository<Room, Integer> {
     Optional<Room> findByNumber(String number);
+
     long count();
 }

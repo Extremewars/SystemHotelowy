@@ -39,7 +39,7 @@ public class TaskController {
     private final UserMapper userMapper;
     private final RoomService roomService;
 
-    public TaskController(TaskService taskService, TaskMapper taskMapper, 
+    public TaskController(TaskService taskService, TaskMapper taskMapper,
                           UserService userService, UserMapper userMapper,
                           RoomService roomService) {
         this.taskService = taskService;
@@ -51,18 +51,18 @@ public class TaskController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    @Operation(summary = "Utwórz nowe zadanie", 
-               description = "Tworzy nowe zadanie. Walidacja: maksymalnie tyle tasków na dzień ile pokoi. Wymaga roli ADMIN lub MANAGER.")
+    @Operation(summary = "Utwórz nowe zadanie",
+            description = "Tworzy nowe zadanie. Walidacja: maksymalnie tyle tasków na dzień ile pokoi. Wymaga roli ADMIN lub MANAGER.")
     public ResponseEntity<?> create(@Valid @RequestBody TaskRequest request) {
         try {
             User assignedTo = null;
             User requestedBy = null;
-            
+
             if (request.getAssignedToId() != null) {
                 assignedTo = userService.findById(request.getAssignedToId())
                         .orElseThrow(() -> new IllegalArgumentException("Użytkownik o ID " + request.getAssignedToId() + " nie istnieje."));
             }
-            
+
             // Jeśli nie podano requestedById, użyj aktualnie zalogowanego użytkownika
             if (request.getRequestedById() != null) {
                 requestedBy = userService.findById(request.getRequestedById())
@@ -76,13 +76,13 @@ public class TaskController {
                             .orElse(null);
                 }
             }
-            
+
             Room room = roomService.findById(request.getRoomId())
                     .orElseThrow(() -> new IllegalArgumentException("Pokój o ID " + request.getRoomId() + " nie istnieje."));
-            
+
             Task task = taskMapper.toEntity(request, assignedTo, requestedBy, room);
             Task created = taskService.create(task);
-            
+
             return ResponseEntity.created(URI.create("/api/tasks/" + created.getId()))
                     .body(taskMapper.toResponse(created));
         } catch (IllegalArgumentException e) {
@@ -166,24 +166,24 @@ public class TaskController {
         try {
             User assignedTo = null;
             User requestedBy = null;
-            
+
             if (request.getAssignedToId() != null) {
                 assignedTo = userService.findById(request.getAssignedToId())
                         .orElseThrow(() -> new IllegalArgumentException("Użytkownik o ID " + request.getAssignedToId() + " nie istnieje."));
             }
-            
+
             if (request.getRequestedById() != null) {
                 requestedBy = userService.findById(request.getRequestedById())
                         .orElseThrow(() -> new IllegalArgumentException("Użytkownik o ID " + request.getRequestedById() + " nie istnieje."));
             }
-            
+
             Room room = roomService.findById(request.getRoomId())
                     .orElseThrow(() -> new IllegalArgumentException("Pokój o ID " + request.getRoomId() + " nie istnieje."));
-            
+
             Task toUpdate = taskMapper.toEntity(request, assignedTo, requestedBy, room);
             toUpdate.setId(id);
             Task updated = taskService.update(toUpdate);
-            
+
             return ResponseEntity.ok(taskMapper.toResponse(updated));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -205,8 +205,8 @@ public class TaskController {
     }
 
     @GetMapping("/can-create/{date}")
-    @Operation(summary = "Sprawdź czy można utworzyć task na datę", 
-               description = "Sprawdza czy można utworzyć nowe zadanie na podaną datę (limit: ilość pokoi).")
+    @Operation(summary = "Sprawdź czy można utworzyć task na datę",
+            description = "Sprawdza czy można utworzyć nowe zadanie na podaną datę (limit: ilość pokoi).")
     public ResponseEntity<Boolean> canCreateTaskForDate(
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return ResponseEntity.ok(taskService.canCreateTaskForDate(date));

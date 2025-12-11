@@ -28,14 +28,14 @@ public class TaskPanel extends VerticalLayout {
 
     private final TaskService taskService;
     private final VaadinAuthenticationService authService;
-    
+
     private TaskGrid taskGrid;
     private List<Task> myTasks = new ArrayList<>();
 
     public TaskPanel(TaskService taskService, VaadinAuthenticationService authService) {
         this.taskService = taskService;
         this.authService = authService;
-        
+
         setWidthFull();
         setSpacing(true);
 
@@ -67,7 +67,7 @@ public class TaskPanel extends VerticalLayout {
         taskGrid = new TaskGrid(this::openTaskDetailsDialog, this::openChangeStatusDialog);
 
         add(topBar, taskGrid);
-        
+
         // Załaduj zadania użytkownika
         loadMyTasks();
     }
@@ -86,30 +86,35 @@ public class TaskPanel extends VerticalLayout {
 
     private void filterTasks(TaskStatus status, String searchText) {
         List<Task> filtered = myTasks;
-        
+
         if (status != null) {
             filtered = filtered.stream()
                     .filter(task -> task.getStatus() == status)
                     .collect(Collectors.toList());
         }
-        
+
         if (searchText != null && !searchText.trim().isEmpty()) {
             String search = searchText.trim().toLowerCase();
             filtered = filtered.stream()
                     .filter(task -> task.getDescription().toLowerCase().contains(search))
                     .collect(Collectors.toList());
         }
-        
+
         taskGrid.setItems(filtered);
     }
 
     private String formatTaskStatus(TaskStatus status) {
         switch (status) {
-            case PENDING: return "Oczekujące";
-            case IN_PROGRESS: return "W trakcie";
-            case DONE: return "Wykonane";
-            case CANCELLED: return "Anulowane";
-            default: return status.name();
+            case PENDING:
+                return "Oczekujące";
+            case IN_PROGRESS:
+                return "W trakcie";
+            case DONE:
+                return "Wykonane";
+            case CANCELLED:
+                return "Anulowane";
+            default:
+                return status.name();
         }
     }
 
@@ -121,20 +126,20 @@ public class TaskPanel extends VerticalLayout {
         FormLayout formLayout = new FormLayout();
         formLayout.addFormItem(new Span(task.getDescription()), "Opis");
         formLayout.addFormItem(new Span(formatTaskStatus(task.getStatus())), "Status");
-        
+
         if (task.getRemarks() != null && !task.getRemarks().isEmpty()) {
             formLayout.addFormItem(new Span(task.getRemarks()), "Uwagi");
         }
-        
+
         if (task.getRoom() != null) {
             formLayout.addFormItem(new Span(task.getRoom().getNumber()), "Pokój");
         }
-        
+
         formLayout.addFormItem(
-            new Span(task.getScheduledAt().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))), 
-            "Zaplanowane na"
+                new Span(task.getScheduledAt().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))),
+                "Zaplanowane na"
         );
-        
+
         formLayout.addFormItem(new Span(task.getDurationInMinutes() + " minut"), "Czas trwania");
 
         Button closeBtn = new Button("Zamknij", e -> dialog.close());

@@ -1,12 +1,12 @@
 package org.systemhotelowy.service.impl;
 
 
-import org.systemhotelowy.model.User;
-import org.systemhotelowy.repository.UserRepository;
-import org.systemhotelowy.service.UserService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.systemhotelowy.model.User;
+import org.systemhotelowy.repository.UserRepository;
+import org.systemhotelowy.service.UserService;
 
 import java.util.List;
 import java.util.Optional;

@@ -33,8 +33,8 @@ public class TaskServiceImpl implements TaskService {
         LocalDate taskDate = task.getScheduledAt().toLocalDate();
         if (!canCreateTaskForDate(taskDate)) {
             throw new IllegalStateException(
-                    "Nie można utworzyć zadania - osiągnięto limit tasków na dzień " + taskDate + 
-                    " (maksymalnie tyle tasków ile pokoi)."
+                    "Nie można utworzyć zadania - osiągnięto limit tasków na dzień " + taskDate +
+                            " (maksymalnie tyle tasków ile pokoi)."
             );
         }
         return taskRepository.save(task);

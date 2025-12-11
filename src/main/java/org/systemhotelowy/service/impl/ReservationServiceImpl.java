@@ -30,7 +30,6 @@ public class ReservationServiceImpl implements ReservationService {
     private final ReservationMapper reservationMapper;
 
 
-
     private void validateGuestCount(ReservationRequest request, Room room) {
         Integer guests = request.getNumberOfGuests();
         if (guests == null || guests < 1) {
@@ -45,8 +44,6 @@ public class ReservationServiceImpl implements ReservationService {
             );
         }
     }
-
-
 
 
     @Override
@@ -179,8 +176,8 @@ public class ReservationServiceImpl implements ReservationService {
 
     @Override
     @Transactional(readOnly = true)
-    public boolean isRoomAvailable(Integer roomId, LocalDate checkInDate, LocalDate checkOutDate, 
-                                  Integer excludeReservationId) {
+    public boolean isRoomAvailable(Integer roomId, LocalDate checkInDate, LocalDate checkOutDate,
+                                   Integer excludeReservationId) {
         List<Reservation> overlapping = reservationRepository.findOverlappingReservations(
                 roomId, checkInDate, checkOutDate);
 

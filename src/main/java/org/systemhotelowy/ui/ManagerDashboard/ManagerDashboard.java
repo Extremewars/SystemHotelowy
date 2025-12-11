@@ -4,12 +4,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
-import org.systemhotelowy.service.DashboardService;
-import org.systemhotelowy.service.ReservationService;
-import org.systemhotelowy.service.RoomService;
-import org.systemhotelowy.service.TaskService;
-import org.systemhotelowy.service.UserService;
-import org.systemhotelowy.service.VaadinAuthenticationService;
+import org.systemhotelowy.service.*;
 import org.systemhotelowy.ui.components.DashboardTopBar;
 import org.systemhotelowy.utils.VaadinSecurityHelper;
 
@@ -45,7 +40,7 @@ public class ManagerDashboard extends VerticalLayout {
         this.userService = userService;
         this.reservationService = reservationService;
         this.dashboardService = dashboardService;
-        
+
         setSizeFull();
         setPadding(true);
         setSpacing(true);

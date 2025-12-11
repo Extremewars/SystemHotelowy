@@ -46,7 +46,7 @@ public class TaskGrid extends Grid<Task> {
             s.getStyle().set("padding", "4px 8px")
                     .set("border-radius", "4px")
                     .set("font-weight", "500");
-            
+
             switch (task.getStatus()) {
                 case DONE -> s.getStyle().set("background-color", "#d4edda").set("color", "#155724");
                 case IN_PROGRESS -> s.getStyle().set("background-color", "#cce5ff").set("color", "#004085");
@@ -75,12 +75,12 @@ public class TaskGrid extends Grid<Task> {
         // Kolumna Akcje
         addComponentColumn(task -> {
             HorizontalLayout actions = new HorizontalLayout();
-            
+
             Button detailsBtn = new Button("Szczegóły", e -> onDetailsClick.accept(task));
-            
+
             Button statusBtn = new Button("Zmień status", e -> onStatusClick.accept(task));
             statusBtn.setEnabled(task.getStatus() != TaskStatus.DONE && task.getStatus() != TaskStatus.CANCELLED);
-            
+
             actions.add(detailsBtn, statusBtn);
             return actions;
         }).setHeader("Akcje")

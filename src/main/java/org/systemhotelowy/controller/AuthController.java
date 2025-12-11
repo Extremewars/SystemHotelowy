@@ -70,7 +70,7 @@ public class AuthController {
         if (request.getRole() == null) {
             request.setRole(Role.USER);
         }
-        
+
         if (userService.findByEmail(request.getEmail()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body("Użytkownik o podanym email już istnieje");

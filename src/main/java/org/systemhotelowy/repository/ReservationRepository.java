@@ -36,9 +36,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, Intege
      * Znajduje wszystkie rezerwacje w podanym okresie (check-in lub check-out).
      */
     @Query("SELECT r FROM Reservation r LEFT JOIN FETCH r.room WHERE " +
-           "(r.checkInDate BETWEEN :startDate AND :endDate) OR " +
-           "(r.checkOutDate BETWEEN :startDate AND :endDate) OR " +
-           "(r.checkInDate <= :startDate AND r.checkOutDate >= :endDate)")
+            "(r.checkInDate BETWEEN :startDate AND :endDate) OR " +
+            "(r.checkOutDate BETWEEN :startDate AND :endDate) OR " +
+            "(r.checkInDate <= :startDate AND r.checkOutDate >= :endDate)")
     List<Reservation> findReservationsInPeriod(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     /**
@@ -46,8 +46,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Intege
      * Używane do walidacji - czy można utworzyć nową rezerwację.
      */
     @Query("SELECT r FROM Reservation r WHERE r.room.id = :roomId AND " +
-           "r.status NOT IN ('CANCELLED', 'CHECKED_OUT') AND " +
-           "((r.checkInDate <= :checkOutDate AND r.checkOutDate >= :checkInDate))")
+            "r.status NOT IN ('CANCELLED', 'CHECKED_OUT') AND " +
+            "((r.checkInDate <= :checkOutDate AND r.checkOutDate >= :checkInDate))")
     List<Reservation> findOverlappingReservations(
             @Param("roomId") Integer roomId,
             @Param("checkInDate") LocalDate checkInDate,
@@ -70,8 +70,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Intege
      * Liczy rezerwacje dla pokoju w danym okresie.
      */
     @Query("SELECT COUNT(r) FROM Reservation r WHERE r.room.id = :roomId AND " +
-           "r.status NOT IN ('CANCELLED') AND " +
-           "((r.checkInDate <= :checkOutDate AND r.checkOutDate >= :checkInDate))")
+            "r.status NOT IN ('CANCELLED') AND " +
+            "((r.checkInDate <= :checkOutDate AND r.checkOutDate >= :checkInDate))")
     long countReservationsForRoomInPeriod(
             @Param("roomId") Integer roomId,
             @Param("checkInDate") LocalDate checkInDate,

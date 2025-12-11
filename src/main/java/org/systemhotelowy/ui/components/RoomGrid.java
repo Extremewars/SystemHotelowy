@@ -98,13 +98,13 @@ public class RoomGrid extends Grid<Room> {
             List<Integer> roomIds = filtered.stream()
                     .map(Room::getId)
                     .collect(Collectors.toList());
-            
+
             List<Task> allTasks = taskService.findByRoomIds(roomIds);
-            
+
             // Grupujemy taski po ID pokoju
             Map<Integer, List<Task>> groupedTasks = allTasks.stream()
                     .collect(Collectors.groupingBy(t -> t.getRoom().getId()));
-            
+
             tasksCache.putAll(groupedTasks);
         }
 
@@ -162,16 +162,22 @@ public class RoomGrid extends Grid<Room> {
 
     private void openTaskDetails(Task task) {
         TaskDetailsDialog dialog = new TaskDetailsDialog(task, taskService, () -> {
-            if(onTaskUpdate != null) onTaskUpdate.run();
+            if (onTaskUpdate != null) onTaskUpdate.run();
         });
         dialog.open();
     }
 
     private HorizontalLayout createActionsLayout(Room room) {
-        Button editBtn = new Button("Edytuj", e -> { if(onEdit != null) onEdit.accept(room); });
-        Button statusBtn = new Button("Status", e -> { if(onStatusChange != null) onStatusChange.accept(room); });
+        Button editBtn = new Button("Edytuj", e -> {
+            if (onEdit != null) onEdit.accept(room);
+        });
+        Button statusBtn = new Button("Status", e -> {
+            if (onStatusChange != null) onStatusChange.accept(room);
+        });
 
-        Button deleteBtn = new Button("Usuń", e -> { if(onDelete != null) onDelete.accept(room); });
+        Button deleteBtn = new Button("Usuń", e -> {
+            if (onDelete != null) onDelete.accept(room);
+        });
         deleteBtn.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_ERROR);
 
         return new HorizontalLayout(editBtn, statusBtn, deleteBtn);
@@ -183,11 +189,31 @@ public class RoomGrid extends Grid<Room> {
         String bg;
 
         switch (room.getRoomStatus()) {
-            case READY -> { label = "Gotowy"; color = "#155724"; bg = "#d4edda"; }
-            case DIRTY -> { label = "Brudny"; color = "#856404"; bg = "#fff3cd"; }
-            case CLEANING -> { label = "Sprzątanie"; color = "#004085"; bg = "#cce5ff"; }
-            case OUT_OF_ORDER, IN_MAINTENANCE -> { label = "Niedostępny"; color = "#721c24"; bg = "#f8d7da"; }
-            default -> { label = room.getRoomStatus().name(); color = "#333"; bg = "#eee"; }
+            case READY -> {
+                label = "Gotowy";
+                color = "#155724";
+                bg = "#d4edda";
+            }
+            case DIRTY -> {
+                label = "Brudny";
+                color = "#856404";
+                bg = "#fff3cd";
+            }
+            case CLEANING -> {
+                label = "Sprzątanie";
+                color = "#004085";
+                bg = "#cce5ff";
+            }
+            case OUT_OF_ORDER, IN_MAINTENANCE -> {
+                label = "Niedostępny";
+                color = "#721c24";
+                bg = "#f8d7da";
+            }
+            default -> {
+                label = room.getRoomStatus().name();
+                color = "#333";
+                bg = "#eee";
+            }
         }
 
         Span s = new Span(label);
@@ -213,8 +239,19 @@ public class RoomGrid extends Grid<Room> {
 
     // --- SETTERY LISTENERÓW ---
 
-    public void addEditListener(Consumer<Room> listener) { this.onEdit = listener; }
-    public void addStatusListener(Consumer<Room> listener) { this.onStatusChange = listener; }
-    public void addDeleteListener(Consumer<Room> listener) { this.onDelete = listener; }
-    public void setTaskUpdateCallback(Runnable callback) { this.onTaskUpdate = callback; }
+    public void addEditListener(Consumer<Room> listener) {
+        this.onEdit = listener;
+    }
+
+    public void addStatusListener(Consumer<Room> listener) {
+        this.onStatusChange = listener;
+    }
+
+    public void addDeleteListener(Consumer<Room> listener) {
+        this.onDelete = listener;
+    }
+
+    public void setTaskUpdateCallback(Runnable callback) {
+        this.onTaskUpdate = callback;
+    }
 }

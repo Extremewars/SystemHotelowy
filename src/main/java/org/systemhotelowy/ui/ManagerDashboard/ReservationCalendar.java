@@ -164,16 +164,20 @@ public class ReservationCalendar extends VerticalLayout {
 
     private String formatStatus(ReservationStatus status) {
         switch (status) {
-            case PENDING: return "Oczekująca";
-            case CONFIRMED: return "Potwierdzona";
-            case CHECKED_IN: return "Zameldowany";
-            case CHECKED_OUT: return "Wymeldowany";
-            case CANCELLED: return "Anulowana";
-            default: return status.name();
+            case PENDING:
+                return "Oczekująca";
+            case CONFIRMED:
+                return "Potwierdzona";
+            case CHECKED_IN:
+                return "Zameldowany";
+            case CHECKED_OUT:
+                return "Wymeldowany";
+            case CANCELLED:
+                return "Anulowana";
+            default:
+                return status.name();
         }
     }
-
-
 
 
     // ------------------------------------------------------------------------

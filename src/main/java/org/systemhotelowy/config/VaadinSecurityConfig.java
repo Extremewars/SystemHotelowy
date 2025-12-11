@@ -18,7 +18,7 @@ public class VaadinSecurityConfig extends VaadinWebSecurity {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         super.configure(http);
-        
+
         setLoginView(http, LoginView.class);
     }
 
@@ -31,7 +31,7 @@ public class VaadinSecurityConfig extends VaadinWebSecurity {
                 "/swagger-resources/**",
                 "/webjars/**"
         );
-        
+
         super.configure(web);
     }
 }

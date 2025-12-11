@@ -25,7 +25,7 @@ import java.util.Optional;
 public class VaadinAuthenticationService {
 
     private static final Logger log = LoggerFactory.getLogger(VaadinAuthenticationService.class);
-    
+
     private final AuthenticationContext authenticationContext;
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
@@ -45,20 +45,20 @@ public class VaadinAuthenticationService {
             Authentication auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, password)
             );
-            
+
             // Ustaw w SecurityContextHolder (dla Spring Security)
             SecurityContextHolder.getContext().setAuthentication(auth);
-            
+
             // Ustaw w sesji HTTP (dla Vaadin)
             VaadinServletRequest request = VaadinServletRequest.getCurrent();
             if (request != null && request.getHttpServletRequest() != null) {
                 request.getHttpServletRequest().getSession().setAttribute(
-                    "SPRING_SECURITY_CONTEXT", 
-                    SecurityContextHolder.getContext()
+                        "SPRING_SECURITY_CONTEXT",
+                        SecurityContextHolder.getContext()
                 );
                 log.debug("Zapisano SecurityContext w sesji HTTP dla użytkownika: {}", email);
             }
-            
+
             // Cache użytkownika w VaadinSession
             userService.findByEmail(email).ifPresent(user -> {
                 if (VaadinSession.getCurrent() != null) {
@@ -66,7 +66,7 @@ public class VaadinAuthenticationService {
                     log.debug("Zapisano użytkownika w VaadinSession: {}", user.getEmail());
                 }
             });
-            
+
             return true;
         } catch (AuthenticationException e) {
             log.warn("Nieudana próba logowania dla: {}", email);
@@ -87,14 +87,14 @@ public class VaadinAuthenticationService {
                 return Optional.of(cachedUser);
             }
         }
-        
+
         // Próba 1: Użyj AuthenticationContext z Vaadin
         Optional<User> user = authenticationContext.getAuthenticatedUser(UserDetails.class)
                 .flatMap(userDetails -> {
                     log.debug("Znaleziono użytkownika przez AuthenticationContext: {}", userDetails.getUsername());
                     return userService.findByEmail(userDetails.getUsername());
                 });
-        
+
         if (user.isPresent()) {
             log.debug("Zwrócono użytkownika z AuthenticationContext: {}", user.get().getEmail());
             // Cache w sesji dla przyszłych wywołań
@@ -103,12 +103,12 @@ public class VaadinAuthenticationService {
             }
             return user;
         }
-        
+
         log.debug("AuthenticationContext nie zwrócił użytkownika, próba przez SecurityContextHolder...");
-        
+
         // Próba 2: Użyj SecurityContextHolder ze Spring Security
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated() 
+        if (authentication != null && authentication.isAuthenticated()
                 && !"anonymousUser".equals(authentication.getPrincipal())
                 && authentication.getPrincipal() instanceof UserDetails) {
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
@@ -123,16 +123,16 @@ public class VaadinAuthenticationService {
                 return secUser;
             }
         } else if (authentication != null) {
-            log.debug("Authentication present ale: isAuthenticated={}, principal={}", 
-                    authentication.isAuthenticated(), 
+            log.debug("Authentication present ale: isAuthenticated={}, principal={}",
+                    authentication.isAuthenticated(),
                     authentication.getPrincipal() != null ? authentication.getPrincipal().getClass().getSimpleName() : "null");
         }
-        
+
         log.warn("Nie znaleziono zalogowanego użytkownika w żadnym kontekście");
         log.warn("AuthenticationContext: {}", authenticationContext != null ? "dostępny" : "null");
         log.warn("SecurityContextHolder auth: {}", authentication != null ? "dostępny" : "null");
         log.warn("VaadinSession: {}", VaadinSession.getCurrent() != null ? "dostępna" : "null");
-        
+
         return Optional.empty();
     }
 

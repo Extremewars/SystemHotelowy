@@ -23,19 +23,19 @@ import java.util.concurrent.TimeUnit;
 public class KpiPanel extends VerticalLayout {
 
     private final DashboardService dashboardService;
-    
+
     private HorizontalLayout kpiLayout;
     private Span readyValue;
     private Span dirtyValue;
     private Span outOfOrderValue;
     private Span tasksValue;
-    
+
     private ScheduledExecutorService scheduler;
     private ScheduledFuture<?> refreshTask;
 
     public KpiPanel(DashboardService dashboardService) {
         this.dashboardService = dashboardService;
-        
+
         setWidthFull();
         setPadding(false);
         setMargin(false);
@@ -50,26 +50,26 @@ public class KpiPanel extends VerticalLayout {
         kpiLayout.add(createKpiBox("Zadania", VaadinIcon.TASKS, value -> tasksValue = value));
 
         add(kpiLayout);
-        
+
         // Początkowe załadowanie danych
         refreshData();
     }
-    
+
     @Override
     protected void onAttach(AttachEvent attachEvent) {
         super.onAttach(attachEvent);
-        
+
         // Uruchom automatyczne odświeżanie co 5 sekund
         scheduler = Executors.newScheduledThreadPool(1);
         refreshTask = scheduler.scheduleAtFixedRate(() -> {
             attachEvent.getUI().access(this::refreshData);
         }, 5, 5, TimeUnit.SECONDS);
     }
-    
+
     @Override
     protected void onDetach(DetachEvent detachEvent) {
         super.onDetach(detachEvent);
-        
+
         // Zatrzymaj odświeżanie gdy komponent jest odłączony
         if (refreshTask != null) {
             refreshTask.cancel(true);
@@ -78,10 +78,10 @@ public class KpiPanel extends VerticalLayout {
             scheduler.shutdown();
         }
     }
-    
+
     private void refreshData() {
         ManagerKpiData data = dashboardService.getManagerKpiData();
-        
+
         // Zaktualizuj wartości
         if (readyValue != null) readyValue.setText(String.valueOf(data.getReadyRooms()));
         if (dirtyValue != null) dirtyValue.setText(String.valueOf(data.getDirtyRooms()));
@@ -105,7 +105,7 @@ public class KpiPanel extends VerticalLayout {
         Span v = new Span("0");
         v.getStyle().set("font-weight", "bold");
         v.getStyle().set("font-size", "24px");
-        
+
         // Przekaż referencję do Span wartości
         valueConsumer.accept(v);
 

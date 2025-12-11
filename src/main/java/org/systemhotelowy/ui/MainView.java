@@ -20,7 +20,7 @@ public class MainView extends VerticalLayout implements BeforeEnterObserver {
 
     public MainView(VaadinSecurityHelper securityHelper) {
         this.securityHelper = securityHelper;
-        
+
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.CENTER);

@@ -44,10 +44,10 @@ public class DashboardServiceImpl implements DashboardService {
         long dirtyRooms = roomService.findAll().stream()
                 .filter(room -> room.getRoomStatus() == RoomStatus.DIRTY)
                 .count();
-        
+
         long myTasks = 0;
         long myPendingTasks = 0;
-        
+
         if (userId != null) {
             var tasks = taskService.findByAssignedToId(userId);
             myTasks = tasks.size();

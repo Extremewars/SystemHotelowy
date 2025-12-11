@@ -1,19 +1,15 @@
 package org.systemhotelowy.ui;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.PasswordField;
-import com.vaadin.flow.component.textfield.EmailField;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
-import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.textfield.EmailField;
+import com.vaadin.flow.component.textfield.PasswordField;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.VaadinServletRequest;
-import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import org.systemhotelowy.dto.UserRequest;
 import org.systemhotelowy.mapper.UserMapper;
@@ -46,7 +42,7 @@ public class LoginView extends VerticalLayout {
         this.userService = userService;
         this.userMapper = userMapper;
         this.securityHelper = securityHelper;
-        
+
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.CENTER);
@@ -147,8 +143,8 @@ public class LoginView extends VerticalLayout {
         switchToLogin.getStyle().set("color", "blue");
         switchToLogin.getStyle().set("text-decoration", "underline");
 
-        registerLayout.add(registerTitle, firstNameField, lastNameField, emailRegister, 
-                          regPassword, regConfirmPassword, roleSelector, registerButton, switchToLogin);
+        registerLayout.add(registerTitle, firstNameField, lastNameField, emailRegister,
+                regPassword, regConfirmPassword, roleSelector, registerButton, switchToLogin);
         registerCard.add(registerLayout);
 
         // ===========================
@@ -190,13 +186,13 @@ public class LoginView extends VerticalLayout {
     /**
      * Obsługa rejestracji nowego użytkownika.
      */
-    private void handleRegister(String firstName, String lastName, String email, 
+    private void handleRegister(String firstName, String lastName, String email,
                                 String password, String confirmPassword, String role) {
         // Walidacja
         if (firstName == null || firstName.isBlank() ||
-            lastName == null || lastName.isBlank() ||
-            email == null || email.isBlank() ||
-            password == null || password.isBlank()) {
+                lastName == null || lastName.isBlank() ||
+                email == null || email.isBlank() ||
+                password == null || password.isBlank()) {
             NotificationUtils.showError("Wypełnij wszystkie pola");
             return;
         }
@@ -226,7 +222,7 @@ public class LoginView extends VerticalLayout {
         userService.create(user);
 
         NotificationUtils.showSuccess("Rejestracja udana! Możesz się teraz zalogować.");
-        
+
         // Automatyczne logowanie po rejestracji
         handleLogin(email, password);
     }
