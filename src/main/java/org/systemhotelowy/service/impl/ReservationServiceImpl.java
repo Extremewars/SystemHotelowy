@@ -29,6 +29,26 @@ public class ReservationServiceImpl implements ReservationService {
     private final RoomRepository roomRepository;
     private final ReservationMapper reservationMapper;
 
+
+
+    private void validateGuestCount(ReservationRequest request, Room room) {
+        Integer guests = request.getNumberOfGuests();
+        if (guests == null || guests < 1) {
+            throw new IllegalArgumentException("Liczba gości musi być większa lub równa 1");
+        }
+
+        Integer capacity = room.getCapacity() != null ? room.getCapacity() : 1;
+
+        if (guests > capacity) {
+            throw new IllegalArgumentException(
+                    "Liczba gości (" + guests + ") nie może przekraczać pojemności pokoju (" + capacity + ")"
+            );
+        }
+    }
+
+
+
+
     @Override
     @Transactional(readOnly = true)
     public List<Reservation> findAll() {
@@ -81,6 +101,9 @@ public class ReservationServiceImpl implements ReservationService {
         Room room = roomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new RuntimeException("Pokój nie znaleziony: " + request.getRoomId()));
 
+        // liczba gości ≤ pojemność pokoju
+        validateGuestCount(request, room);
+
         // Sprawdź czy pokój jest dostępny
         if (!isRoomAvailable(request.getRoomId(), request.getCheckInDate(), request.getCheckOutDate())) {
             throw new IllegalArgumentException("Pokój jest już zarezerwowany w tym okresie");
@@ -106,27 +129,30 @@ public class ReservationServiceImpl implements ReservationService {
             throw new IllegalArgumentException("Data wymeldowania musi być późniejsza niż data zameldowania");
         }
 
-        // Jeśli zmieniono pokój lub daty, sprawdź dostępność
         boolean roomChanged = !existing.getRoom().getId().equals(request.getRoomId());
-        boolean datesChanged = !existing.getCheckInDate().equals(request.getCheckInDate()) ||
-                               !existing.getCheckOutDate().equals(request.getCheckOutDate());
 
-        if (roomChanged || datesChanged) {
-            if (!isRoomAvailable(request.getRoomId(), request.getCheckInDate(), 
-                               request.getCheckOutDate(), id)) {
+        if (roomChanged) {
+            if (!isRoomAvailable(request.getRoomId(),
+                    request.getCheckInDate(),
+                    request.getCheckOutDate(),
+                    id)) {
                 throw new IllegalArgumentException("Pokój jest już zarezerwowany w tym okresie");
             }
         }
 
-        // Jeśli zmieniono pokój, zaktualizuj referencję
         if (roomChanged) {
             Room newRoom = roomRepository.findById(request.getRoomId())
                     .orElseThrow(() -> new RuntimeException("Pokój nie znaleziony: " + request.getRoomId()));
-
             existing.setRoom(newRoom);
+
+            // walidacja liczby gości dla nowego pokoju
+            validateGuestCount(request, newRoom);
+        } else {
+            // walidacja dla obecnego pokoju (gdy pokój się nie zmienia)
+            validateGuestCount(request, existing.getRoom());
         }
 
-        // Aktualizuj pozostałe pola
+        // Aktualizuj pozostałe pola z DTO
         reservationMapper.updateEntityFromRequest(request, existing);
 
         return reservationRepository.save(existing);

@@ -12,23 +12,26 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.systemhotelowy.dto.report.HotelReportDto;
+import org.systemhotelowy.dto.report.HotelReportImportSummaryDto;
 import org.systemhotelowy.service.ReportExportService;
 import org.systemhotelowy.service.impl.XmlReportExportService;
 
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.springframework.format.annotation.DateTimeFormat.ISO.DATE;
 
 @RestController
 @RequestMapping("/api/reports")
 @RequiredArgsConstructor
-@Tag(name = "Reports", description = "Endpoints for hotel reports (XML export/import)")
+@Tag(name = "Reports", description = "Endpoints for hotel reports (XML export & import)")
 public class ReportController {
 
     private final ReportExportService reportExportService;
+    private final XmlReportExportService xmlService;
 
+    // -------------------------------------------------
+    // GET /api/reports/daily/xml  – EXPORT XML
+    // -------------------------------------------------
     @GetMapping(
             value = "/daily/xml",
             produces = MediaType.APPLICATION_XML_VALUE
@@ -56,6 +59,9 @@ public class ReportController {
         return new ResponseEntity<>(xmlBytes, headers, HttpStatus.OK);
     }
 
+    // -------------------------------------------------
+    // POST /api/reports/daily/xml/import – IMPORT XML
+    // -------------------------------------------------
     @PostMapping(
             value = "/daily/xml/import",
             consumes = MediaType.APPLICATION_XML_VALUE,
@@ -63,27 +69,16 @@ public class ReportController {
     )
     @Operation(
             summary = "Import daily hotel report from XML",
-            description = "Accepts XML report (validated against XSD), deserializes it to DTO and returns summary (date + counts)."
+            description = "Validates XML against XSD schema and returns summary of imported data."
     )
-    public ResponseEntity<Map<String, Object>> importDailyXmlReport(
+    public ResponseEntity<?> importDailyXml(
             @RequestBody byte[] xmlBytes
     ) {
-
-        if (!(reportExportService instanceof XmlReportExportService xmlService)) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        try {
+            HotelReportImportSummaryDto dto = xmlService.importDailyReport(xmlBytes);
+            return ResponseEntity.ok(dto);
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.badRequest().build();
         }
-
-        HotelReportDto dto = xmlService.importDailyReport(xmlBytes);
-
-        Map<String, Object> summary = new HashMap<>();
-        summary.put("date", dto.getDate());
-        summary.put("roomsCount", dto.getRooms().size());
-        summary.put("tasksCount", dto.getTasks().size());
-        summary.put("reservationsCount", dto.getReservations().size());
-
-        return ResponseEntity.ok(summary);
     }
 }
-
-
-

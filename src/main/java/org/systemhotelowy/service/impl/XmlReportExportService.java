@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.systemhotelowy.dto.report.HotelReportDto;
+import org.systemhotelowy.dto.report.HotelReportImportSummaryDto;
 import org.systemhotelowy.dto.report.RoomReportEntry;
 import org.systemhotelowy.dto.report.TaskReportEntry;
 import org.systemhotelowy.model.Room;
@@ -37,36 +38,53 @@ public class XmlReportExportService implements ReportExportService {
     private final RoomService roomService;
     private final TaskService taskService;
 
+    /**
+     * Eksport dziennego raportu hotelowego do XML (używany przez GET /api/reports/daily/xml).
+     */
     @Override
     public byte[] exportDailyReport(LocalDate date) {
         HotelReportDto reportDto = buildReport(date);
         return marshalToXml(reportDto);
     }
 
-    public HotelReportDto importDailyReport(byte[] xmlBytes) {
+    /**
+     * Import dziennego raportu hotelowego z XML (używany przez POST /api/reports/daily/xml/import).
+     * Waliduje XML względem XSD, deserializuje do HotelReportDto, następnie zwraca podsumowanie.
+     */
+    public HotelReportImportSummaryDto importDailyReport(byte[] xmlBytes) {
         try {
+            // 1. Walidacja względem XSD
             validateAgainstSchema(xmlBytes);
 
+            // 2. Deserializacja XML -> HotelReportDto
             JAXBContext context = JAXBContext.newInstance(HotelReportDto.class);
             Unmarshaller unmarshaller = context.createUnmarshaller();
 
-            try (ByteArrayInputStream in = new ByteArrayInputStream(xmlBytes)) {
-                Object result = unmarshaller.unmarshal(in);
-                if (result instanceof HotelReportDto dto) {
-                    return dto;
-                }
-                throw new IllegalStateException("Unexpected root element while unmarshalling hotel report XML");
-            }
+            HotelReportDto dto = (HotelReportDto)
+                    unmarshaller.unmarshal(new ByteArrayInputStream(xmlBytes));
+
+            // 3. Zbudowanie podsumowania
+            HotelReportImportSummaryDto summary = new HotelReportImportSummaryDto();
+            summary.setDate(dto.getDate());
+            summary.setRoomsCount(dto.getRooms() != null ? dto.getRooms().size() : 0);
+            summary.setTasksCount(dto.getTasks() != null ? dto.getTasks().size() : 0);
+            summary.setReservationsCount(dto.getReservations() != null ? dto.getReservations().size() : 0);
+
+            return summary;
         } catch (Exception e) {
-            log.error("Error while unmarshalling hotel report XML", e);
-            throw new IllegalStateException("Could not import XML report", e);
+            log.error("Failed to import XML daily report", e);
+            throw new IllegalStateException("Could not import XML daily report", e);
         }
     }
 
+    /**
+     * Buduje DTO raportu na podstawie danych z serwisów domenowych.
+     */
     private HotelReportDto buildReport(LocalDate date) {
         HotelReportDto dto = new HotelReportDto();
         dto.setDate(DATE_FORMATTER.format(date));
 
+        // rooms
         List<Room> rooms = roomService != null ? roomService.findAll() : List.of();
         rooms.stream()
                 .map(room -> new RoomReportEntry(
@@ -78,6 +96,7 @@ public class XmlReportExportService implements ReportExportService {
                 ))
                 .forEach(dto.getRooms()::add);
 
+        // tasks
         List<Task> tasks = taskService != null ? taskService.findByDate(date) : List.of();
         tasks.stream()
                 .map(task -> new TaskReportEntry(
@@ -92,9 +111,13 @@ public class XmlReportExportService implements ReportExportService {
                 ))
                 .forEach(dto.getTasks()::add);
 
+        // reservations – na razie puste
         return dto;
     }
 
+    /**
+     * Serializacja DTO -> XML + walidacja względem XSD.
+     */
     private byte[] marshalToXml(HotelReportDto reportDto) {
         try {
             JAXBContext context = JAXBContext.newInstance(HotelReportDto.class);
@@ -105,6 +128,7 @@ public class XmlReportExportService implements ReportExportService {
             marshaller.marshal(reportDto, out);
             byte[] xmlBytes = out.toByteArray();
 
+            // Walidacja wygenerowanego XML względem XSD
             validateAgainstSchema(xmlBytes);
 
             return xmlBytes;
@@ -114,6 +138,9 @@ public class XmlReportExportService implements ReportExportService {
         }
     }
 
+    /**
+     * Walidacja XML względem schematu XSD (resources/xsd/hotel-report.xsd).
+     */
     private void validateAgainstSchema(byte[] xmlBytes) {
         try {
             SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
