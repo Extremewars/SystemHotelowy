@@ -12,10 +12,13 @@ import org.systemhotelowy.dto.report.HotelReportImportSummaryDto;
 import org.systemhotelowy.dto.report.RoomReportEntry;
 import org.systemhotelowy.dto.report.TaskReportEntry;
 import org.systemhotelowy.model.Room;
+import org.systemhotelowy.model.RoomStatus;
 import org.systemhotelowy.model.Task;
+import org.systemhotelowy.model.TaskStatus;
 import org.systemhotelowy.service.ReportExportService;
 import org.systemhotelowy.service.RoomService;
 import org.systemhotelowy.service.TaskService;
+import org.systemhotelowy.service.UserService;
 
 import javax.xml.XMLConstants;
 import javax.xml.transform.stream.StreamSource;
@@ -37,6 +40,7 @@ public class XmlReportExportService implements ReportExportService {
 
     private final RoomService roomService;
     private final TaskService taskService;
+    private final UserService userService;
 
     /**
      * Eksport dziennego raportu hotelowego do XML (używany przez GET /api/reports/daily/xml).
@@ -63,6 +67,9 @@ public class XmlReportExportService implements ReportExportService {
             HotelReportDto dto = (HotelReportDto)
                     unmarshaller.unmarshal(new ByteArrayInputStream(xmlBytes));
 
+            // 2a. Przetworzenie danych (aktualizacja bazy)
+            processImportedData(dto);
+
             // 3. Zbudowanie podsumowania
             HotelReportImportSummaryDto summary = new HotelReportImportSummaryDto();
             summary.setDate(dto.getDate());
@@ -74,6 +81,77 @@ public class XmlReportExportService implements ReportExportService {
         } catch (Exception e) {
             log.error("Failed to import XML daily report", e);
             throw new IllegalArgumentException("Could not import XML daily report", e);
+        }
+    }
+
+    /**
+     * Aktualizuje stan bazy danych na podstawie zaimportowanego raportu.
+     */
+    private void processImportedData(HotelReportDto dto) {
+        // 1. Aktualizacja pokoi
+        if (dto.getRooms() != null) {
+            for (RoomReportEntry roomEntry : dto.getRooms()) {
+                if (roomEntry.getId() != null) {
+                    roomService.findById(roomEntry.getId()).ifPresent(room -> {
+                        boolean changed = false;
+                        // Aktualizacja statusu
+                        if (roomEntry.getStatus() != null) {
+                            try {
+                                RoomStatus newStatus = RoomStatus.valueOf(roomEntry.getStatus());
+                                if (room.getRoomStatus() != newStatus) {
+                                    room.setRoomStatus(newStatus);
+                                    changed = true;
+                                }
+                            } catch (IllegalArgumentException e) {
+                                log.warn("Invalid room status in import: {}", roomEntry.getStatus());
+                            }
+                        }
+                        
+                        if (changed) {
+                            roomService.update(room);
+                        }
+                    });
+                }
+            }
+        }
+
+        // 2. Aktualizacja zadań
+        if (dto.getTasks() != null) {
+            for (TaskReportEntry taskEntry : dto.getTasks()) {
+                if (taskEntry.getId() != null) {
+                    taskService.findById(taskEntry.getId()).ifPresent(task -> {
+                        boolean changed = false;
+                        // Aktualizacja statusu
+                        if (taskEntry.getStatus() != null) {
+                            try {
+                                TaskStatus newStatus = TaskStatus.valueOf(taskEntry.getStatus());
+                                if (task.getStatus() != newStatus) {
+                                    task.setStatus(newStatus);
+                                    changed = true;
+                                }
+                            } catch (IllegalArgumentException e) {
+                                log.warn("Invalid task status in import: {}", taskEntry.getStatus());
+                            }
+                        }
+
+                        // Aktualizacja przypisanego użytkownika (opcjonalnie)
+                        if (taskEntry.getAssignedToEmail() != null) {
+                            userService.findByEmail(taskEntry.getAssignedToEmail()).ifPresent(user -> {
+                                if (!user.equals(task.getAssignedTo())) {
+                                    task.setAssignedTo(user);
+                                    // changed = true; // Zmienna lokalna w lambdzie musi być finalna lub effectively final
+                                    // W tym przypadku musimy wymusić update, jeśli zmieniliśmy usera
+                                    taskService.update(task); 
+                                }
+                            });
+                        }
+
+                        if (changed) {
+                            taskService.update(task);
+                        }
+                    });
+                }
+            }
         }
     }
 

@@ -9,6 +9,14 @@ Aplikacja oferuje podział na role użytkowników (Menedżer, Pracownik), zapewn
 
 System implementuje bezpieczne uwierzytelnianie oparte na **Spring Security**.
 
+## Funkcjonalności
+- Rejestracja i logowanie użytkowników z podziałem na role (Menedżer, Pracownik).
+- Zarządzanie pokojami hotelowymi (dodawanie, edytowanie, usuwanie).
+- Przeglądanie i zarządzanie rezerwacjami pokoi.
+- Przydzielanie i monitorowanie zadań dla personelu hotelowego.
+- Generowanie raportów dotyczących działalności hotelu.
+- Interfejs użytkownika oparty na Vaadin Flow, zapewniający responsywny i intuicyjny design.
+
 ## Baza danych
 
 Aplikacja korzysta z relacyjnej bazy danych **MySQL 8.0**, która jest uruchamiana w izolowanym środowisku za pomocą **Docker**.
@@ -92,23 +100,7 @@ Poniżej znajduje się opis struktury katalogów i kluczowych plików w aplikacj
 
 - **`docker-compose.yml`** - Plik tworzący kontener bazodanowy MySQL.
 
-## Kryteria oceny (Java)
-
-```
-Warunkiem zaliczenia przedmiotu jest oddanie projektu oraz prezentacja działającej
-aplikacji. Projekt może być wykonany samodzielnie lub w zespole 2-3 osobowym.
-Zakres projektu obejmuje:
-• aplikację w architekturze klient – serwer (Android, JavaFX, Vaadin, …, - Spring Boot)
-• połączenie z bazą danych (co najmniej podstawowe operacje bazodanowe),
-• uwierzytelnianie użytkowników z podziałem na role (np. token JWT, Spring Security),
-• serializację danych (import/export plików XML/JSON),
-• testy jednostkowe i integracyjne,
-• dokumentację projektu (co najmniej opis REST API [Swagger] i opis działania
-projektu/uruchomienia/wymagań systemowych [README.md])
-Mile widziany jest:
-• harmonogram rozwoju projektu (Jira, Asana, Kate, Notatnik),
-• system kontroli wersji (GIT),
-• Docker.
-W przypadku zespołów wieloosobowych należy bezsprzecznie określić udział
-poszczególnych osób w wykonaniu zadań. 
-```
+## Autorzy
+- Svitlana Lysiuk
+- Paweł Olech
+- Rafał Oleszczak
