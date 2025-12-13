@@ -13,7 +13,7 @@ class XmlReportExportServiceTest {
     @Test
     void exportDailyReport_shouldGenerateXmlWithCorrectRootAndDate() {
         // given
-        XmlReportExportService service = new XmlReportExportService(null, null);
+        XmlReportExportService service = new XmlReportExportService(null, null, null);
         LocalDate date = LocalDate.of(2025, 12, 9);
 
         // when
@@ -29,7 +29,7 @@ class XmlReportExportServiceTest {
     @Test
     void exportDailyReport_shouldIncludeEmptySectionsWhenNoData() {
         // given
-        XmlReportExportService service = new XmlReportExportService(null, null);
+        XmlReportExportService service = new XmlReportExportService(null, null, null);
         LocalDate date = LocalDate.of(2025, 12, 9);
 
         // when
